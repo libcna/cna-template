@@ -17,7 +17,7 @@
  * It is intentionally small: load one texture and animate it. Delete it and
  * replace it with your own game -- see README.md.
  *
- * It is also deliberately renderer-agnostic. CNA has 46 renderers, and they are
+ * It is also deliberately renderer-agnostic. CNA has 22 renderers, and they are
  * not interchangeable: some are 2D-only, some open no window at all, some draw
  * nothing on purpose. Everything HelloGame does (Clear, SpriteBatch, Texture2D)
  * is in the subset every renderer implements, and anything beyond that subset is
@@ -58,8 +58,7 @@ private:
     bool supportsCombinedDepthStencil_;
 
     /**
-     * False for the renderers that create no window (HEADLESS, SOFTWARE, STUB,
-     * PORTABLEGL). There is no GraphicsCapability for this, so it is probed from
+     * False for the renderers that create no window (HEADLESS, SOFTWARE, STUB). There is no GraphicsCapability for this, so it is probed from
      * the GameWindow rather than assumed from the renderer name.
      */
     bool hasWindow_;

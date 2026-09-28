@@ -73,6 +73,14 @@ def load_manifest() -> list[dict]:
 def canonical_from_cna() -> list[str] | None:
     """CNA's own renderer list, if a checkout is reachable."""
     for candidate in (REPO.parent / "cna", REPO / ".." / "cna"):
+        identities = candidate / "cmake" / "RendererIdentities.cmake"
+        if identities.exists():
+            match = re.search(
+                r"set\(CNA_RENDERER_PUBLIC_IDENTITIES\s+([^)]*)\)",
+                identities.read_text(),
+            )
+            if match:
+                return match.group(1).split()
         path = (candidate / CNA_RENDERER_FILE).resolve()
         if path.exists():
             match = CNA_STRINGS_RE.search(path.read_text())
@@ -182,7 +190,10 @@ def build_presets(renderers: list[dict]) -> dict:
                 f"Dependency: {renderer['dependency']}."
             ),
             "inherits": inherits,
-            "binaryDir": "${sourceDir}/build-" + preset_name,
+            "binaryDir": "${sourceDir}/" + (
+                "build-probe" if platforms == ["web"] else
+                "build-consumer" if platforms == ["windows"] else "build"
+            ),
             "cacheVariables": {"CNA_GRAPHICS_RENDERER": name},
         }
         if condition:
@@ -256,10 +267,10 @@ def build_doc(renderers: list[dict]) -> str:
     )
     add("")
     add(
-        "**Display** says whether the renderer opens a window. The four that do not "
-        "(`HEADLESS`, `SOFTWARE`, `STUB`, `PORTABLEGL`) need no X server, no GPU and no "
+        "**Display** says whether the renderer opens a window. The three that do not "
+        "(`HEADLESS`, `SOFTWARE`, `STUB`) need no X server, no GPU and no "
         "video driver, which makes them the right choice for CI and servers. Note that "
-        "`SOFTWARE` and `PORTABLEGL` genuinely rasterize but present nowhere."
+        "`SOFTWARE` genuinely rasterizes but presents nowhere."
     )
     add("")
     add(

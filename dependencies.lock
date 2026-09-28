@@ -1,7 +1,8 @@
 # Compatibility baseline for cna-template.
 #
-# These are the exact revisions this template was audited and built against on
-# 2026-08-11. CI pins the same ones (.github/workflows/ci.yml), and its
+# Compatibility baseline updated after the renderer build matrix on 2026-09-28.
+# CNA includes the verified DX11/DX12 fixes; docs/renderer-build-report.md records
+# the revisions actually tested for each group. CI pins these (.github/workflows/ci.yml); its
 # "structure" job fails if the two ever disagree.
 #
 # You are not required to use these: the template consumes sibling checkouts, so
@@ -12,14 +13,12 @@
 # Which of these you actually need depends on the renderer you select:
 #   CNA, SHARP_RUNTIME   always
 #   EASY_GL, META_GL     the five GL renderers (OPENGLES2/OPENGLES3/OPENGL33/WEBGL1/WEBGL2)
-#   FREE_DIRECT          FREEDIRECT only
 # See docs/renderers.md for the full per-renderer dependency column.
 #
 # When updating: change these, change the env: block in ci.yml, and re-run the
 # host verification matrix recorded in NEXT.md.
 
-CNA=7a64362efef4119bf880459ef1704fb2c52199e2
-SHARP_RUNTIME=f827a6c5349234d5ac938886788ed8eca8fe1c10
-EASY_GL=0b46d35c394a9fb6aea6a85c6587894b5013da33
-META_GL=571d3a62fe166b9781ac6193d137b12ff3757620
-FREE_DIRECT=934f72ff0c52902631fceeb52c006f3ed2767485
+CNA=d5cf852212fb2d3a6930dfb05d95ee96be5aaa24
+SHARP_RUNTIME=007280bd1cc789f851f7f454a5041c8ce2479e13
+EASY_GL=deda7a426c3c166c0e03a4790f1ede610e2e46fb
+META_GL=20c8b2dc5bb80e32706784066db9fd9e15b3f46a

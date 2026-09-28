@@ -1,6 +1,6 @@
 name: CI
 
-# Tiered on purpose. CNA has 46 renderers across five platforms, and a naive
+# Tiered on purpose. CNA has 22 renderers across five platforms, and a naive
 # "every renderer x every platform" matrix would be mostly impossible
 # combinations (a GitHub runner cannot build a DirectX renderer on Linux, or
 # Metal anywhere but macOS) and would take hours to tell you nothing.
@@ -33,11 +33,10 @@ permissions:
 env:
   # One place to change the validated compatibility baseline. Keep in step with
   # dependencies.lock — the structure job checks that they agree.
-  CNA_REF: 7a64362efef4119bf880459ef1704fb2c52199e2
-  SHARP_RUNTIME_REF: f827a6c5349234d5ac938886788ed8eca8fe1c10
-  EASY_GL_REF: 0b46d35c394a9fb6aea6a85c6587894b5013da33
-  META_GL_REF: 571d3a62fe166b9781ac6193d137b12ff3757620
-  FREE_DIRECT_REF: 934f72ff0c52902631fceeb52c006f3ed2767485
+  CNA_REF: d5cf852212fb2d3a6930dfb05d95ee96be5aaa24
+  SHARP_RUNTIME_REF: 007280bd1cc789f851f7f454a5041c8ce2479e13
+  EASY_GL_REF: deda7a426c3c166c0e03a4790f1ede610e2e46fb
+  META_GL_REF: 20c8b2dc5bb80e32706784066db9fd9e15b3f46a
 
 jobs:
   # --- Tier A -------------------------------------------------------------
@@ -79,7 +78,6 @@ jobs:
           check SHARP_RUNTIME "$SHARP_RUNTIME_REF"
           check EASY_GL       "$EASY_GL_REF"
           check META_GL       "$META_GL_REF"
-          check FREE_DIRECT   "$FREE_DIRECT_REF"
           exit $fail
 
       - name: Presets parse
@@ -167,8 +165,6 @@ jobs:
         with: { repository: openeggbert/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
       - uses: actions/checkout@v4
         with: { repository: openeggbert/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
-      - uses: actions/checkout@v4
-        with: { repository: openeggbert/free-direct, ref: '${{ env.FREE_DIRECT_REF }}', path: free-direct }
 
       - name: Install build dependencies
         run: |

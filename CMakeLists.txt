@@ -3,7 +3,7 @@
 # =============================================================================
 # Everything renderer-specific in this file is driven by cmake/renderers.json
 # (see cmake/CnaRenderers.cmake). There is deliberately no per-renderer
-# if/elseif chain here: CNA has 50 renderers and keeps growing, so the template
+# if/elseif chain here: CNA has 22 renderers and keeps growing, so the template
 # treats the renderer set as data rather than as code.
 #
 # CMake 3.23 is the floor because the easy-gl/meta-gl siblings backing the
@@ -81,12 +81,15 @@ endif()
 # -----------------------------------------------------------------------------
 # Renderer selection
 # -----------------------------------------------------------------------------
+foreach(_renderer IN LISTS CNA_GRAPHICS_RENDERERS)
+    cna_template_validate_renderer("${_renderer}" "${CNA_ROOT_DIR}")
+endforeach()
 # CNA_GRAPHICS_RENDERER is CNA's own public cache variable and this template
 # passes it straight through -- it deliberately does not re-declare a default.
 # If you set nothing, CNA picks its own (WEBGL2 on the web, OPENGLES3 on Linux,
 # SDL_RENDERER elsewhere) and the template validates the result afterwards.
 #
-# CNA also exposes 50 CNA_RENDERER_<NAME> booleans as an alternative input path.
+# CNA also exposes 22 CNA_RENDERER_<NAME> booleans as an alternative input path.
 # They all default to OFF and CNA only consults them if one is switched ON, so
 # setting the string alone is sufficient and this file leaves them alone.
 if(DEFINED CNA_GRAPHICS_RENDERER AND NOT CNA_GRAPHICS_RENDERER STREQUAL "")
@@ -290,11 +293,13 @@ endif()
 # CNA has already cached each *_DIR pointing at the libraries it built. All
 # three must be visible here so cna_copy_sdl_runtime() can package their DLLs.
 # This must come after add_subdirectory() for exactly that reason.
-foreach(_sdl_package IN ITEMS SDL3 SDL3_image SDL3_mixer)
-    if(NOT TARGET ${_sdl_package}::${_sdl_package})
-        find_package(${_sdl_package} REQUIRED CONFIG)
-    endif()
-endforeach()
+if(NOT CNA_ENABLE_SDL STREQUAL "OFF")
+    foreach(_sdl_package IN ITEMS SDL3 SDL3_image SDL3_mixer)
+        if(NOT TARGET ${_sdl_package}::${_sdl_package})
+            find_package(${_sdl_package} REQUIRED CONFIG)
+        endif()
+    endforeach()
+endif()
 
 # -----------------------------------------------------------------------------
 # The application
@@ -359,6 +364,12 @@ if(ANDROID)
 
 elseif(EMSCRIPTEN)
     target_link_libraries(${_app} PRIVATE SDL3::SDL3)
+    # Game::Run() blocks while yielding animation frames. CNA deliberately
+    # keeps Asyncify opt-in for external final applications (its JS-driven
+    # library consumers must remain synchronous).
+    if(TARGET CNA::EmscriptenAsyncify)
+        target_link_libraries(${_app} PRIVATE CNA::EmscriptenAsyncify)
+    endif()
     set_target_properties(${_app} PROPERTIES SUFFIX ".html")
 
     target_link_options(${_app} PRIVATE
@@ -373,7 +384,11 @@ elseif(EMSCRIPTEN)
     # WebGL version constraints are per renderer, not global: pinning
     # MIN/MAX_WEBGL_VERSION=2 for every web build would break WEBGL1, and the
     # CANVAS/HTML_DOM/SVG_DOM renderers create no WebGL context at all.
-    cna_template_renderer_field("${CNA_GRAPHICS_RENDERER}" webflags _webflags)
+    if("WEBGL1" IN_LIST CNA_GRAPHICS_RENDERERS AND "WEBGL2" IN_LIST CNA_GRAPHICS_RENDERERS)
+        set(_webflags -sMIN_WEBGL_VERSION=1 -sMAX_WEBGL_VERSION=2)
+    else()
+        cna_template_renderer_field("${CNA_GRAPHICS_RENDERER}" webflags _webflags)
+    endif()
     if(_webflags)
         target_link_options(${_app} PRIVATE ${_webflags})
     endif()
@@ -390,7 +405,7 @@ else()
     endif()
 endif()
 
-if(WIN32)
+if(WIN32 AND NOT CNA_ENABLE_SDL STREQUAL "OFF")
     # CNA defines these helpers; CMake functions are global once defined, so they
     # are callable here after add_subdirectory(). Fall back to CMake's own
     # TARGET_RUNTIME_DLLS if a CNA revision does not provide them.
@@ -443,4 +458,18 @@ if(CNA_TEMPLATE_BUILD_TESTS AND NOT ANDROID AND NOT EMSCRIPTEN AND NOT CMAKE_CRO
     set_tests_properties(${CNA_TEMPLATE_APP_NAME}Smoke PROPERTIES
         TIMEOUT 30
         LABELS "${_labels}")
+
+    foreach(_renderer IN LISTS CNA_GRAPHICS_RENDERERS)
+        cna_template_renderer_field("${_renderer}" display _display)
+        if(_display STREQUAL "none")
+            set(_labels headless)
+        else()
+            set(_labels display)
+        endif()
+        add_test(NAME ${CNA_TEMPLATE_APP_NAME}Smoke_${_renderer}
+            COMMAND ${_app} --smoke-test)
+        set_tests_properties(${CNA_TEMPLATE_APP_NAME}Smoke_${_renderer} PROPERTIES
+            ENVIRONMENT "CNA_GRAPHICS_RENDERER=${_renderer}"
+            TIMEOUT 30 LABELS "${_labels}")
+    endforeach()
 endif()

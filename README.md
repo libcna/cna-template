@@ -34,7 +34,7 @@ loading, sprite drawing and input. Then delete `HelloGame` and write your own.
 
 - A working `Game` subclass with `LoadContent` / `Update` / `Draw`, texture
   loading, `SpriteBatch` drawing and keyboard input.
-- A build that works with **any** of CNA's 50 renderers, and refuses invalid
+- A build that accepts **all** of CNA's 22 renderers, and refuses invalid
   renderer/platform combinations with an explanation rather than a link error.
 - Ready-made presets for the common renderers, generated from one manifest.
 - A smoke test that runs in CI with no display at all.
@@ -96,7 +96,6 @@ renderers that need them:
 | Checkout | Needed by |
 | --- | --- |
 | `../easy-gl` **and** `../meta-gl` | `OPENGLES2`, `OPENGLES3`, `OPENGL33`, `WEBGL1`, `WEBGL2` |
-| `../free-direct` | `FREEDIRECT` |
 
 `docs/renderers.md` lists the dependency for every renderer. Nothing else is a
 blanket prerequisite: most renderers need only CNA and sharp-runtime, and
@@ -127,7 +126,7 @@ Renderers with a preset:
 cmake --list-presets
 ```
 
-Everything else is selected with `-DCNA_GRAPHICS_RENDERER=<NAME>`. All 46 are
+Everything else is selected with `-DCNA_GRAPHICS_RENDERER=<NAME>`. All 22 are
 selectable either way — the presets are a convenience, not a whitelist.
 
 **➡ [docs/renderers.md](docs/renderers.md) — the full matrix**: what each
@@ -136,11 +135,11 @@ does 3D, what it depends on, and how far this template's CI exercises it.
 
 A few things worth knowing before you choose:
 
-- Renderers are **not** interchangeable. Eleven are 2D-only and throw on
+- Renderers are **not** interchangeable. Five are 2D-only and throw on
   `VertexBuffer`, `DrawUserPrimitives` and depth state.
-- Four open **no window at all** (`HEADLESS`, `SOFTWARE`, `STUB`, `PORTABLEGL`).
+- Three open **no window at all** (`HEADLESS`, `SOFTWARE`, `STUB`).
   They need no X server and no GPU, which makes them ideal for CI and servers.
-  `SOFTWARE` and `PORTABLEGL` really do rasterize; they just present nowhere.
+  `SOFTWARE` really does rasterize; it just presents nowhere.
 - Ask the device what it supports rather than testing its name:
 
   ```cpp
@@ -152,6 +151,22 @@ A few things worth knowing before you choose:
 If you pick a renderer that cannot work where you are building, the configure
 stops and tells you why, what the renderer *does* support, and which renderers
 would work instead.
+
+Current CNA can also compile several renderers into one executable. Pass a
+semicolon-separated list, then select a renderer when starting the game:
+
+```bash
+cmake -S . -B build -DCNA_GRAPHICS_RENDERER=HEADLESS \
+  '-DCNA_GRAPHICS_RENDERERS=HEADLESS;SOFTWARE;SDL_RENDERER;VULKAN'
+cmake --build build --target HelloGame --parallel
+CNA_GRAPHICS_RENDERER=VULKAN ./build/HelloGame
+```
+
+The template validates every list member and registers one smoke test per
+renderer. Linux/macOS presets share `build/`, Windows cross-build presets use
+`build-consumer/`, and web presets use `build-probe/`; reconfigure before
+switching a preset. Metal requires macOS and is not part of the Linux, Windows
+or web renderer matrix.
 
 ---
 
@@ -234,13 +249,34 @@ cmake --build build --config Release
 Required runtime DLLs are copied next to the executable automatically.
 
 **Cross-compiling from Linux** with the bundled MinGW-w64 toolchain — this is
-also how you build the Windows-only renderers (`DIRECTX1`–`DIRECTX12`,
-`DIRECT2D`, `GDI`, `GLIDE`):
+also how you build the Windows-only renderers (`DIRECTX9`, `DIRECTX11`,
+`DIRECTX12`, `GDI`):
 
 ```bash
 cmake --preset windows-directx11
 cmake --build --preset windows-directx11 -j3
 ```
+
+For a native Win32 build containing GDI and DirectX 9:
+
+```bash
+cmake -S . -B build-consumer -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/mingw-w64.cmake \
+  -DCMAKE_BUILD_TYPE=Release -DCNA_PLATFORM=WIN32 \
+  -DCNA_AUDIO_PLATFORM=NULL -DCNA_ENABLE_SDL=OFF -DCNA_ENABLE_NET=OFF \
+  -DCNA_GRAPHICS_RENDERER=GDI \
+  '-DCNA_GRAPHICS_RENDERERS=GDI;DIRECTX9'
+cmake --build build-consumer --target HelloGame --parallel
+CNA_GRAPHICS_RENDERER=DIRECTX9 WINEDLLOVERRIDES=d3d9=b wine ./build-consumer/HelloGame.exe --smoke-test
+CNA_GRAPHICS_RENDERER=GDI wine ./build-consumer/HelloGame.exe --smoke-test
+```
+
+The pinned CNA revision includes the MinGW compilation and shader-reflection
+link fixes for DirectX 11/12. Both renderers built and passed a three-frame Wine
+smoke test; see [the build report](docs/renderer-build-report.md) for artifacts
+and the DX12 Wine setup. CNA still omits D3DCommon when GDI is the default of a
+build containing DirectX 11/12, so the verified Windows outputs use separate
+GDI/DX9 and DX11/DX12 configurations.
 
 `CNA_WINDOWS_DEPENDENCIES_ROOT=/path/to/mingw-prefix` remains available for a
 renderer or game that needs extra Windows-target packages. The base template
@@ -252,9 +288,7 @@ The resulting directory is self-contained: CNA's SDL DLLs and the dynamic
 MinGW C++ runtime are copied next to the executable. The C++ runtime must stay
 dynamic because MinGW's static libstdc++ cannot link CNA's full RTTI graph.
 
-Several of those need more than a compiler to *run*: `DIRECTX8` and `DIRECTX10`
-are delivered through DXVK, and `GLIDE` needs a 32-bit toolchain plus an
-external `glide3x.dll`. `docs/renderers.md` records this per renderer.
+Windows binaries can be run on Windows or tested through Wine on Linux.
 
 ### Web (Emscripten)
 
@@ -271,13 +305,16 @@ Produces `HelloGame.html` / `.js` / `.wasm` / `.data`. Serve it over HTTP —
 `file://` will not work:
 
 ```bash
-python3 -m http.server -d build-web-webgl2
+python3 -m http.server -d build-probe
 ```
 
 Five renderers target the web: `WEBGL2` (CNA's default), `WEBGL1`, and the three
 DOM renderers `CANVAS`, `HTML_DOM` and `SVG_DOM`, which use no WebGL at all.
 The WebGL version flags are applied **per renderer** — forcing WebGL 2 globally,
 as this template used to, silently breaks `WEBGL1`.
+When both WebGL profiles are compiled together, the template enables versions
+1 through 2. Its final web executable explicitly links CNA's Asyncify facility,
+which `Game::Run()` needs to yield animation frames while preserving the game.
 
 ### Android
 

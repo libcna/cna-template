@@ -137,6 +137,19 @@ endfunction()
 # than bricking the template; cna_template_assert_no_drift() below is the
 # authoritative check and still fails loudly.
 function(cna_template_canonical_renderers cna_root out_var out_source)
+    # Current CNA keeps the public inventory in a dedicated identity registry.
+    if(EXISTS "${cna_root}/cmake/RendererIdentities.cmake")
+        file(READ "${cna_root}/cmake/RendererIdentities.cmake" _identities)
+        string(REGEX MATCH "set\\(CNA_RENDERER_PUBLIC_IDENTITIES[ \t\r\n]+([^)]*)\\)"
+            _match "${_identities}")
+        if(NOT _match)
+            message(FATAL_ERROR "cna-template: cannot read CNA's public renderer identities")
+        endif()
+        string(REGEX MATCHALL "[A-Z][A-Z0-9_]*" _names "${CMAKE_MATCH_1}")
+        set(${out_var} "${_names}" PARENT_SCOPE)
+        set(${out_source} "cna" PARENT_SCOPE)
+        return()
+    endif()
     set(_file "${cna_root}/cmake/RendererSelection.cmake")
     set(_names)
     if(EXISTS "${_file}")
@@ -212,7 +225,7 @@ function(cna_template_validate_renderer renderer cna_root)
     list(LENGTH _canonical _count)
 
     if(NOT renderer IN_LIST _canonical)
-        # Offer the closest matches rather than dumping 50 names unsorted.
+        # Offer the closest matches rather than dumping all names unsorted.
         set(_hint)
         foreach(_r IN LISTS _canonical)
             if(_r MATCHES "^${renderer}" OR renderer MATCHES "^${_r}")

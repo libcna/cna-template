@@ -1,5 +1,31 @@
 # NEXT.md — handoff
 
+## Current handoff — 2026-09-28
+
+The manifest and generated presets/docs now match CNA's 22 canonical renderers.
+All 21 requested identities (METAL excluded) built and passed three-frame smoke
+tests: 12 native Linux, five web renderers in Chrome, and GDI/DX9/DX11/DX12
+through MinGW/Wine. The report records the exact revisions per group and outputs:
+[renderer build report](docs/renderer-build-report.md).
+
+CNA DX-271 fixes the two MinGW compiler defects and the newly approved
+shader-reflection linker defect. `dependencies.lock` and CI now pin
+`d5cf852212fb2d3a6930dfb05d95ee96be5aaa24`; the other dependency pins match the
+report. DX11/DX12 were verified on this revision; the other 19 renderer results
+remain from the earlier CNA revision, without a redundant full rebuild.
+
+Native presets share `build/`, MinGW presets `build-consumer/`, web presets
+`build-probe/`. The Windows outputs preserve GDI/DX9 separately from DX11/DX12,
+because CNA still omits D3DCommon when the combined build's default is GDI.
+DX12's Wine test needs DXVK DXGI alongside vkd3d-proton; see the report.
+Sharp-runtime was not modified. Generator `--check`, preset parsing,
+dependency-pin consistency and whitespace checks pass.
+
+The August handoff below is historical and predates the current renderer list,
+new results, stack-owned Game verification and dependency pins.
+
+---
+
 **Written 2026-08-11**, at the end of a full modernization pass driven by CNA
 growing from 7 renderers ("backends") to 46. That growth had silently broken
 every part of this template's build: the public CMake variable was renamed
