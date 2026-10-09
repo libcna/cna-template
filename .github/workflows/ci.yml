@@ -117,7 +117,11 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
+          # X11/Wayland headers: CNA's vendored SDL3 refuses to configure without one of them, and the
+          # hosted image no longer ships them (CNA plans/plan_apple_m4.md AM4-249).
           sudo apt-get install -y ninja-build ccache pkg-config xvfb \
+            libx11-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxfixes-dev libxss-dev \
+            libxtst-dev libwayland-dev wayland-protocols libxkbcommon-dev libudev-dev libdbus-1-dev \
             libavcodec-dev libavformat-dev libavutil-dev libswresample-dev \
             libgl1-mesa-dev libglu1-mesa-dev mesa-utils
 
@@ -174,6 +178,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build ccache pkg-config \
+            libx11-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxfixes-dev libxss-dev \
+            libxtst-dev libwayland-dev wayland-protocols libxkbcommon-dev libudev-dev libdbus-1-dev \
             libavcodec-dev libavformat-dev libavutil-dev libswresample-dev \
             libgl1-mesa-dev libglu1-mesa-dev libvulkan-dev \
             libgles-dev libshaderc-dev
