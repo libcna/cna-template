@@ -54,9 +54,9 @@ git clone https://github.com/openeggbert/cna.git
 git clone https://github.com/openeggbert/sharp-runtime.git
 git clone https://github.com/openeggbert/cna-template.git
 
-# CNA vendors SDL as submodules and needs them present.
+# CNA vendors SDL and Draco as submodules and needs them present.
 git -C cna submodule update --init \
-    third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+    third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
 
 cd cna-template
 cmake --preset headless
@@ -80,15 +80,26 @@ also clone `easy-gl` and `meta-gl` first, see below).
 | CMake | 3.23 or newer |
 | Compiler | C++23 (GCC 14+, Clang 18+, MSVC 19.38+) |
 | Siblings | `../cna`, `../sharp-runtime` |
-| CNA submodules | `third_party/SDL`, `SDL_image`, `SDL_mixer`, `enet` |
+| CNA submodules | `third_party/SDL`, `SDL_image`, `SDL_mixer`, `draco` |
+| JSON | `nlohmann-json` 3.11+ (CNA's gamer services; host headers suffice for Web and Android) |
+| libcurl | 7.85+ on desktop targets (CNA's gamer services); optional on Android, unused on Web |
 
-On Linux you also need `pkg-config` and the FFmpeg development packages, which
-CNA's media module requires unconditionally there:
+On Linux you also need `pkg-config`, the FFmpeg development packages (CNA's
+media module requires them unconditionally there), the JSON and libcurl
+packages above, and the X11/Wayland headers CNA's vendored SDL3 configures
+against:
 
 ```bash
 sudo apt-get install -y cmake ninja-build pkg-config ccache \
-    libavcodec-dev libavformat-dev libavutil-dev libswresample-dev
+    libavcodec-dev libavformat-dev libavutil-dev libswresample-dev \
+    libcurl4-openssl-dev nlohmann-json3-dev \
+    libx11-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxfixes-dev \
+    libxss-dev libxtst-dev libwayland-dev wayland-protocols libxkbcommon-dev
 ```
+
+On macOS, `brew install nlohmann-json` (libcurl comes with the SDK). On Windows
+with MSVC, `vcpkg install curl nlohmann-json --triplet x64-windows` and pass
+vcpkg's toolchain file, as `.github/workflows/ci.yml` does.
 
 **Renderer-dependent extra checkouts** — clone these only if you use the
 renderers that need them:

@@ -119,15 +119,17 @@ jobs:
           sudo apt-get update
           # X11/Wayland headers: CNA's vendored SDL3 refuses to configure without one of them, and the
           # hosted image no longer ships them (CNA plans/plan_apple_m4.md AM4-249).
+          # libcurl + nlohmann-json: CNA's gamer services (GS-003a) need both on desktop builds.
           sudo apt-get install -y ninja-build ccache pkg-config xvfb \
+            libcurl4-openssl-dev nlohmann-json3-dev \
             libx11-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxfixes-dev libxss-dev \
             libxtst-dev libwayland-dev wayland-protocols libxkbcommon-dev libudev-dev libdbus-1-dev \
             libavcodec-dev libavformat-dev libavutil-dev libswresample-dev \
             libgl1-mesa-dev libglu1-mesa-dev mesa-utils
 
-      - name: Fetch CNA's vendored SDL submodules
+      - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
 
       - uses: hendrikmuhs/ccache-action@v1
         with: { key: 'linux-${{ matrix.renderer }}' }
@@ -176,15 +178,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build ccache pkg-config \
+            libcurl4-openssl-dev nlohmann-json3-dev \
             libx11-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxfixes-dev libxss-dev \
             libxtst-dev libwayland-dev wayland-protocols libxkbcommon-dev libudev-dev libdbus-1-dev \
             libavcodec-dev libavformat-dev libavutil-dev libswresample-dev \
             libgl1-mesa-dev libglu1-mesa-dev libvulkan-dev \
             libgles-dev libshaderc-dev
 
-      - name: Fetch CNA's vendored SDL submodules
+      - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
 
       - uses: hendrikmuhs/ccache-action@v1
         with: { key: 'linux-broad-${{ matrix.renderer }}' }
@@ -224,9 +227,16 @@ jobs:
       - uses: mymindstorm/setup-emsdk@v14
         with: { version: 6.0.3 }
 
-      - name: Fetch CNA's vendored SDL submodules
+      # CNA's gamer services read the host's header-only nlohmann-json even in a cross build
+      # (CNA cmake/HeaderOnlyJson.cmake); the web build links no libcurl.
+      - name: Install host JSON headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends nlohmann-json3-dev
+
+      - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
 
       - name: Configure
         working-directory: cna-template
@@ -253,9 +263,8 @@ jobs:
   windows:
     name: Windows (MSVC, SDL_RENDERER)
     # windows-2022, not windows-latest: windows-latest moved to Visual Studio 2026, where the
-    # "Visual Studio 17 2022" generator finds no instance, and the August CNA this template pins
-    # does not install its SDL3 under VS 2026 either (CNA plans/plan_apple_m4.md AM4-250). The
-    # image matches the toolchain the pin was written against.
+    # "Visual Studio 17 2022" generator this job and the README use finds no instance (CNA
+    # plans/plan_apple_m4.md AM4-250).
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -265,13 +274,22 @@ jobs:
       - uses: actions/checkout@v4
         with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
 
-      - name: Fetch CNA's vendored SDL submodules
+      - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
+
+      # CNA's gamer services (GS-003a) need libcurl and nlohmann-json on desktop builds. The image's
+      # own vcpkg provides both for MSVC; its toolchain file points find_package() at them.
+      - name: Install libcurl and nlohmann-json (vcpkg)
+        shell: pwsh
+        run: |
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install curl nlohmann-json --triplet x64-windows
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Configure
         working-directory: cna-template
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCNA_GRAPHICS_RENDERER=SDL_RENDERER
+        shell: pwsh
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCNA_GRAPHICS_RENDERER=SDL_RENDERER "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows
 
       - name: Build
         working-directory: cna-template
@@ -299,9 +317,16 @@ jobs:
       # CNA plans/plan_apple_m4.md AM4-251).
       - uses: android-actions/setup-android@v4
 
-      - name: Fetch CNA's vendored SDL submodules
+      - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
+
+      # CNA's gamer services read the host's header-only nlohmann-json in the NDK cross build too
+      # (CNA cmake/HeaderOnlyJson.cmake); libcurl is optional there and absent from the NDK.
+      - name: Install host JSON headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends nlohmann-json3-dev
 
       - name: Assemble debug APK
         working-directory: cna-template/android
