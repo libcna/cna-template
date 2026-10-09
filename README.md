@@ -34,7 +34,7 @@ loading, sprite drawing and input. Then delete `HelloGame` and write your own.
 
 - A working `Game` subclass with `LoadContent` / `Update` / `Draw`, texture
   loading, `SpriteBatch` drawing and keyboard input.
-- A build that works with **any** of CNA's 46 renderers, and refuses invalid
+- A build that works with **any** of CNA's 14 renderers, and refuses invalid
   renderer/platform combinations with an explanation rather than a link error.
 - Ready-made presets for the common renderers, generated from one manifest.
 - A smoke test that runs in CI with no display at all.
@@ -95,8 +95,7 @@ renderers that need them:
 
 | Checkout | Needed by |
 | --- | --- |
-| `../easy-gl` **and** `../meta-gl` | `OPENGLES2`, `OPENGLES3`, `OPENGL33`, `WEBGL1`, `WEBGL2` |
-| `../free-direct` | `FREEDIRECT` |
+| `../easy-gl` **and** `../meta-gl` | `OPENGLES3`, `OPENGL33`, `WEBGL2` |
 
 `docs/renderers.md` lists the dependency for every renderer. Nothing else is a
 blanket prerequisite: most renderers need only CNA and sharp-runtime, and
@@ -127,7 +126,7 @@ Renderers with a preset:
 cmake --list-presets
 ```
 
-Everything else is selected with `-DCNA_GRAPHICS_RENDERER=<NAME>`. All 46 are
+Everything else is selected with `-DCNA_GRAPHICS_RENDERER=<NAME>`. All 14 are
 selectable either way — the presets are a convenience, not a whitelist.
 
 **➡ [docs/renderers.md](docs/renderers.md) — the full matrix**: what each
@@ -234,8 +233,7 @@ cmake --build build --config Release
 Required runtime DLLs are copied next to the executable automatically.
 
 **Cross-compiling from Linux** with the bundled MinGW-w64 toolchain — this is
-also how you build the Windows-only renderers (`DIRECTX1`–`DIRECTX12`,
-`DIRECT2D`, `GDI`, `GLIDE`):
+also how you build the Windows-only renderers (`DIRECTX9`, `DIRECTX11`):
 
 ```bash
 cmake --preset windows-directx11
@@ -274,10 +272,10 @@ Produces `HelloGame.html` / `.js` / `.wasm` / `.data`. Serve it over HTTP —
 python3 -m http.server -d build-web-webgl2
 ```
 
-Five renderers target the web: `WEBGL2` (CNA's default), `WEBGL1`, and the three
-DOM renderers `CANVAS`, `HTML_DOM` and `SVG_DOM`, which use no WebGL at all.
-The WebGL version flags are applied **per renderer** — forcing WebGL 2 globally,
-as this template used to, silently breaks `WEBGL1`.
+`WEBGL2` (CNA's default) is the renderer that targets the web; CNA retired the
+others (`WEBGL1` and the DOM renderers `CANVAS`, `HTML_DOM`, `SVG_DOM`). The
+WebGL flags still come **per renderer** from the manifest's `webflags`, so a web
+renderer CNA adds later gets its own instead of one global setting.
 
 ### Android
 
@@ -396,8 +394,8 @@ project, add CNA's `third_party/cgltf` and `third_party/stb` to your include
 path before `add_subdirectory(CNA)`.
 
 **`unknown renderer CNA_GRAPHICS_RENDERER='EASYGL'`** — `EASYGL` was retired as a
-renderer name; it is now the shared implementation behind `OPENGLES2`,
-`OPENGLES3`, `OPENGL33`, `WEBGL1` and `WEBGL2`. Pick one of those.
+renderer name; it is now the shared implementation behind `OPENGLES3`,
+`OPENGL33` and `WEBGL2`. Pick one of those.
 
 **`renderer 'X' cannot target Y`** — the renderer is not available on the
 platform you are building for. The message lists what does work.

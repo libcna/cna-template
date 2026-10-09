@@ -212,7 +212,7 @@ function(cna_template_validate_renderer renderer cna_root)
     list(LENGTH _canonical _count)
 
     if(NOT renderer IN_LIST _canonical)
-        # Offer the closest matches rather than dumping 46 names unsorted.
+        # Offer the closest matches rather than dumping every name unsorted.
         set(_hint)
         foreach(_r IN LISTS _canonical)
             if(_r MATCHES "^${renderer}" OR renderer MATCHES "^${_r}")
@@ -228,7 +228,7 @@ function(cna_template_validate_renderer renderer cna_root)
         if(renderer STREQUAL "EASYGL")
             string(APPEND _msg
                 "  EASYGL is no longer a renderer name -- it is the internal implementation\n"
-                "  shared by OPENGLES2, OPENGLES3, OPENGL33, WEBGL1 and WEBGL2. Pick one of\n"
+                "  shared by OPENGLES3, OPENGL33 and WEBGL2. Pick one of\n"
                 "  those instead: OPENGLES3 for desktop Linux, WEBGL2 for the web.\n")
         endif()
         _cna_template_pretty_list("${_canonical}" "    " _all)

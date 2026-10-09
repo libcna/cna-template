@@ -12,8 +12,7 @@ Sibling repositories (all read-only from here):
 ```
 ../cna             the framework — the source of truth for everything below
 ../sharp-runtime   .NET base-class-library types CNA is built on (always required)
-../easy-gl         backs the five GL-profile renderers; itself needs ../meta-gl
-../free-direct     backs the FREEDIRECT renderer only
+../easy-gl         backs the three GL-profile renderers; itself needs ../meta-gl
 ../cna-samples     official XNA 4.0 samples ported to CNA — best porting reference
 ```
 
@@ -115,7 +114,7 @@ directory, and never build under `/tmp` or the session scratchpad. See
 
 ## Upstream boundaries
 
-`../cna`, `../sharp-runtime`, `../easy-gl`, `../meta-gl` and `../free-direct` are
+`../cna`, `../sharp-runtime`, `../easy-gl` and `../meta-gl` are
 **read-only**. When an upstream bug blocks the template:
 
 1. Record it in `missing.md` with evidence and the concrete upstream fix.

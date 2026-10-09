@@ -3,11 +3,12 @@
 # =============================================================================
 # Everything renderer-specific in this file is driven by cmake/renderers.json
 # (see cmake/CnaRenderers.cmake). There is deliberately no per-renderer
-# if/elseif chain here: CNA has 46 renderers and keeps growing, so the template
+# if/elseif chain here: CNA's renderer set changes (it has 14 public renderers
+# since RRC-018 retired the rest), so the template
 # treats the renderer set as data rather than as code.
 #
 # CMake 3.23 is the floor because the easy-gl/meta-gl siblings backing the
-# OPENGLES2/OPENGLES3/OPENGL33/WEBGL1/WEBGL2 renderers require it (FILE_SET
+# OPENGLES3/OPENGL33/WEBGL2 renderers require it (FILE_SET
 # HEADERS). CNA itself only needs 3.20, but a template that could not build the
 # GL family would be a poor starting point.
 cmake_minimum_required(VERSION 3.23)
@@ -86,7 +87,7 @@ endif()
 # If you set nothing, CNA picks its own (WEBGL2 on the web, OPENGLES3 on Linux,
 # SDL_RENDERER elsewhere) and the template validates the result afterwards.
 #
-# CNA also exposes 46 CNA_RENDERER_<NAME> booleans as an alternative input path.
+# CNA also exposes one CNA_RENDERER_<NAME> boolean per renderer as an alternative input path.
 # They all default to OFF and CNA only consults them if one is switched ON, so
 # setting the string alone is sufficient and this file leaves them alone.
 if(DEFINED CNA_GRAPHICS_RENDERER AND NOT CNA_GRAPHICS_RENDERER STREQUAL "")
@@ -174,90 +175,6 @@ if(NOT TARGET SHARP_RUNTIME
     endforeach()
 endif()
 
-# The pinned CNA revision changed IGraphicsRenderer::CreateRenderTargetCube()
-# from four to five parameters but missed CanvasRenderer's declaration and
-# definition.  Keep the sibling checkout read-only: derive two build-tree
-# compatibility copies, verify the exact stale signatures before replacing
-# them, then compile CanvasRenderer.cpp against the corrected overlay header.
-# The strict guards make an upstream change fail visibly instead of silently
-# applying a stale textual patch.  See missing.md CNA-8.
-if(EMSCRIPTEN
-        AND CNA_GRAPHICS_RENDERER STREQUAL "CANVAS"
-        AND TARGET cna_renderer_canvas)
-    set(_canvas_source
-        "${CNA_ROOT_DIR}/modules/renderers/canvas/src/CanvasRenderer.cpp")
-    set(_canvas_header
-        "${CNA_ROOT_DIR}/modules/renderers/canvas/include/CNA/Internal/Renderers/Canvas/CanvasRenderer.hpp")
-    cmake_path(NORMAL_PATH _canvas_source)
-    cmake_path(NORMAL_PATH _canvas_header)
-    set(_canvas_compat_root
-        "${CMAKE_CURRENT_BINARY_DIR}/cna-template-compat/canvas")
-    set(_canvas_compat_source "${_canvas_compat_root}/CanvasRenderer.cpp")
-    set(_canvas_compat_header
-        "${_canvas_compat_root}/include/CNA/Internal/Renderers/Canvas/CanvasRenderer.hpp")
-
-    file(READ "${_canvas_header}" _canvas_header_content)
-    set(_canvas_old_header_signature [=[
-        std::unique_ptr<IRenderTargetCubeRenderer> CreateRenderTargetCube(
-            int size, int depthFormat, bool mipMap = false,
-            int multiSampleCount = 0) override;]=])
-    set(_canvas_new_header_signature [=[
-        std::unique_ptr<IRenderTargetCubeRenderer> CreateRenderTargetCube(
-            int size, int depthFormat, bool preserveContents = false,
-            bool mipMap = false, int multiSampleCount = 0) override;]=])
-    string(FIND "${_canvas_header_content}"
-        "${_canvas_old_header_signature}" _canvas_header_signature_position)
-    if(_canvas_header_signature_position EQUAL -1)
-        message(FATAL_ERROR
-            "cna-template: CNA's CanvasRenderer.hpp no longer has the expected "
-            "stale CreateRenderTargetCube signature. Remove or update the CNA-8 "
-            "compatibility block instead of applying it blindly.")
-    endif()
-    string(REPLACE "${_canvas_old_header_signature}"
-        "${_canvas_new_header_signature}"
-        _canvas_header_content "${_canvas_header_content}")
-
-    file(READ "${_canvas_source}" _canvas_source_content)
-    set(_canvas_old_source_signature [=[
-    std::unique_ptr<IRenderTargetCubeRenderer> CanvasRenderer::CreateRenderTargetCube(
-        int size, int, bool, int)]=])
-    set(_canvas_new_source_signature [=[
-    std::unique_ptr<IRenderTargetCubeRenderer> CanvasRenderer::CreateRenderTargetCube(
-        int size, int, bool, bool, int)]=])
-    string(FIND "${_canvas_source_content}"
-        "${_canvas_old_source_signature}" _canvas_source_signature_position)
-    if(_canvas_source_signature_position EQUAL -1)
-        message(FATAL_ERROR
-            "cna-template: CNA's CanvasRenderer.cpp no longer has the expected "
-            "stale CreateRenderTargetCube signature. Remove or update the CNA-8 "
-            "compatibility block instead of applying it blindly.")
-    endif()
-    string(REPLACE "${_canvas_old_source_signature}"
-        "${_canvas_new_source_signature}"
-        _canvas_source_content "${_canvas_source_content}")
-
-    file(MAKE_DIRECTORY
-        "${_canvas_compat_root}"
-        "${_canvas_compat_root}/include/CNA/Internal/Renderers/Canvas")
-    file(CONFIGURE OUTPUT "${_canvas_compat_header}"
-        CONTENT "${_canvas_header_content}" @ONLY)
-    file(CONFIGURE OUTPUT "${_canvas_compat_source}"
-        CONTENT "${_canvas_source_content}" @ONLY)
-
-    get_target_property(_canvas_sources cna_renderer_canvas SOURCES)
-    list(FIND _canvas_sources "${_canvas_source}" _canvas_source_index)
-    if(_canvas_source_index EQUAL -1)
-        message(FATAL_ERROR
-            "cna-template: cannot locate CanvasRenderer.cpp in "
-            "cna_renderer_canvas; refusing an incomplete CNA-8 workaround.")
-    endif()
-    list(REMOVE_ITEM _canvas_sources "${_canvas_source}")
-    set_property(TARGET cna_renderer_canvas PROPERTY SOURCES
-        ${_canvas_sources} "${_canvas_compat_source}")
-    target_include_directories(cna_renderer_canvas BEFORE PRIVATE
-        "${_canvas_compat_root}/include")
-endif()
-
 # CNA has now resolved the renderer (ours or its own default) and published the
 # canonical list in the cache. Re-check both against the manifest.
 cna_template_assert_no_drift()
@@ -313,10 +230,10 @@ target_include_directories(${_app} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/game/inc
 
 # CNA propagates CNA_RENDERER_<X> to consumers through its cna_build_flags
 # INTERFACE, but applies CNA_GL_PROFILE_<X> with a directory-scoped
-# add_compile_definitions() that never reaches a parent-scope consumer. The five
+# add_compile_definitions() that never reaches a parent-scope consumer. The three
 # GL renderers all share the define CNA_RENDERER_EASYGL, so without the profile
 # CNA::getCurrentGraphicsRendererName() falls through to its OPENGLES3 default
-# and misreports OPENGLES2/OPENGL33/WEBGL1/WEBGL2 in *our* translation units
+# and misreports OPENGL33/WEBGL2 in *our* translation units
 # while CNA's own report the truth. Re-applying it here restores agreement.
 # Upstream fix recorded in missing.md.
 cna_template_renderer_field("${CNA_GRAPHICS_RENDERER}" category _renderer_category)
@@ -367,8 +284,8 @@ elseif(EMSCRIPTEN)
         "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/Content@/Content")
 
     # WebGL version constraints are per renderer, not global: pinning
-    # MIN/MAX_WEBGL_VERSION=2 for every web build would break WEBGL1, and the
-    # CANVAS/HTML_DOM/SVG_DOM renderers create no WebGL context at all.
+    # MIN/MAX_WEBGL_VERSION=2 for every web build would bind every future web
+    # renderer to WebGL 2, whatever its manifest says.
     cna_template_renderer_field("${CNA_GRAPHICS_RENDERER}" webflags _webflags)
     if(_webflags)
         target_link_options(${_app} PRIVATE ${_webflags})

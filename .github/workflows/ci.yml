@@ -1,6 +1,6 @@
 name: CI
 
-# Tiered on purpose. CNA has 46 renderers across five platforms, and a naive
+# Tiered on purpose. CNA has 14 renderers across five platforms, and a naive
 # "every renderer x every platform" matrix would be mostly impossible
 # combinations (a GitHub runner cannot build a DirectX renderer on Linux, or
 # Metal anywhere but macOS) and would take hours to tell you nothing.
@@ -32,12 +32,13 @@ permissions:
 
 env:
   # One place to change the validated compatibility baseline. Keep in step with
-  # dependencies.lock — the structure job checks that they agree.
-  CNA_REF: 7a64362efef4119bf880459ef1704fb2c52199e2
-  SHARP_RUNTIME_REF: f827a6c5349234d5ac938886788ed8eca8fe1c10
-  EASY_GL_REF: 0b46d35c394a9fb6aea6a85c6587894b5013da33
-  META_GL_REF: 571d3a62fe166b9781ac6193d137b12ff3757620
-  FREE_DIRECT_REF: 934f72ff0c52902631fceeb52c006f3ed2767485
+  # dependencies.lock — the structure job checks that they agree. Moved to the
+  # CNA apple/m4-stabilization line (owner decision, CNA plans/plan_apple_m4.md
+  # AM4-291); FREEDIRECT, and with it free-direct, was retired by CNA (RRC-018).
+  CNA_REF: 88abe456eac110d35f4601e85ebbd2b7b8287d0b
+  SHARP_RUNTIME_REF: 59454257eb1c4712ef43afd5650267c6d6b64918
+  EASY_GL_REF: 1edf4c1a4708149b6a699365f43b58aa467c345f
+  META_GL_REF: 3f08607a834b0c7d51d6fa60f375f89cda33a1f0
 
 jobs:
   # --- Tier A -------------------------------------------------------------
@@ -52,7 +53,7 @@ jobs:
         with: { path: cna-template }
       - uses: actions/checkout@v4
         with:
-          repository: openeggbert/cna
+          repository: libcna/cna
           ref: ${{ env.CNA_REF }}
           path: cna
 
@@ -79,7 +80,6 @@ jobs:
           check SHARP_RUNTIME "$SHARP_RUNTIME_REF"
           check EASY_GL       "$EASY_GL_REF"
           check META_GL       "$META_GL_REF"
-          check FREE_DIRECT   "$FREE_DIRECT_REF"
           exit $fail
 
       - name: Presets parse
@@ -106,13 +106,13 @@ jobs:
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/cna, ref: '${{ env.CNA_REF }}', path: cna }
+        with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+        with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
+        with: { repository: libcna/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
+        with: { repository: libcna/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
 
       - name: Install build dependencies
         run: |
@@ -164,15 +164,13 @@ jobs:
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/cna, ref: '${{ env.CNA_REF }}', path: cna }
+        with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+        with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
+        with: { repository: libcna/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
-      - uses: actions/checkout@v4
-        with: { repository: openeggbert/free-direct, ref: '${{ env.FREE_DIRECT_REF }}', path: free-direct }
+        with: { repository: libcna/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
 
       - name: Install build dependencies
         run: |
@@ -207,21 +205,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # WEBGL2 is CNA's own web default; CANVAS is the WebGL-free DOM path.
-        # Both are built to prove the per-renderer Emscripten link flags work —
-        # a single global WebGL setting would break one of them.
-        renderer: [WEBGL2, CANVAS]
+        # WEBGL2 is CNA's web default. CANVAS, the WebGL-free DOM path this matrix
+        # also built, was retired by CNA (RRC-018) and is gone from the manifest
+        # (CNA plans/plan_apple_m4.md AM4-291).
+        renderer: [WEBGL2]
     steps:
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/cna, ref: '${{ env.CNA_REF }}', path: cna }
+        with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+        with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
+        with: { repository: libcna/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
+        with: { repository: libcna/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
 
       - uses: mymindstorm/setup-emsdk@v14
         with: { version: 6.0.3 }
@@ -263,9 +261,9 @@ jobs:
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/cna, ref: '${{ env.CNA_REF }}', path: cna }
+        with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+        with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
 
       - name: Fetch CNA's vendored SDL submodules
         working-directory: cna
@@ -290,9 +288,9 @@ jobs:
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/cna, ref: '${{ env.CNA_REF }}', path: cna }
+        with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+        with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
 
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }

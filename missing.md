@@ -156,32 +156,6 @@ targets, it supplies a compatibility `SHARP_RUNTIME` INTERFACE target over
 CNA's own default component list. This preserves every legacy CNA tool without
 re-enabling `All`.
 
-### CNA-8 — CANVAS did not follow the `CreateRenderTargetCube` interface change
-
-`IGraphicsRenderer::CreateRenderTargetCube()` now takes five arguments; the new
-third argument is `preserveContents`
-(`modules/graphics/include/CNA/Internal/Renderers/Common/IGraphicsRenderer.hpp:1482`).
-The pinned CANVAS renderer still declares and defines the old four-argument
-method:
-
-- `modules/renderers/canvas/include/CNA/Internal/Renderers/Canvas/CanvasRenderer.hpp:112-114`
-- `modules/renderers/canvas/src/CanvasRenderer.cpp:361-362`
-
-Clang correctly rejects the header because a non-overriding overload is marked
-`override`. This made the CI representative CANVAS build impossible before any
-application source was linked.
-
-**Fix upstream:** insert `bool preserveContents` in the CANVAS declaration and
-definition, matching every updated renderer. CANVAS does not retain cube-target
-content, so the implementation may intentionally leave it unnamed/unused.
-
-**What this template does meanwhile:** only for an Emscripten CANVAS build, it
-verifies both exact stale signatures, derives corrected copies under the build
-tree, and compiles the renderer against an overlay header. It never edits CNA's
-checkout. Every textual replacement and source-list assumption is guarded by a
-fatal error so the workaround cannot silently survive an upstream source
-change.
-
 ### CNA-9 — vendored SDL's persistent cache defaults inside the source checkout
 
 `cmake/ThirdPartySDL.cmake:20-31` chooses
@@ -291,6 +265,12 @@ the modularization, and its comment still cites this file by name.
 ---
 
 ## Obsolete
+
+### CNA-8 — CANVAS did not follow the `CreateRenderTargetCube` interface change
+
+Obsolete: CNA retired the CANVAS renderer (RRC-018), and the template now builds against the
+campaign line, so neither the stale signature nor the build-tree overlay that worked around it
+exists any more (CNA `plans/plan_apple_m4.md` AM4-291). The Web job builds WEBGL2.
 
 ### `CNA_GRAPHICS_BACKEND`'s `STRINGS` list omitted WEBGPU
 

@@ -151,10 +151,13 @@ void HelloGame::ReportRendererCapabilities()
 
 void HelloGame::LoadContent()
 {
-    // A renderer with no SDL window still has a working GraphicsDevice,
+    // A renderer with no window still has a working GraphicsDevice,
     // SpriteBatch and ContentManager -- it just has nowhere to present. CNA
-    // exposes no capability for "has a window", so probe the window itself.
-    hasWindow_ = Game::getWindowProperty().GetNativeSdlWindowEXT() != nullptr;
+    // exposes no capability for "has a window", so ask the window itself:
+    // XNA's GameWindow.Handle is zero when there is none. (CNA replaced the
+    // SDL-specific GetNativeSdlWindowEXT() with platform-neutral handles in
+    // PLAT-51.)
+    hasWindow_ = Game::getWindowProperty().getHandleProperty() != 0;
 
     auto& device = getGraphicsDeviceProperty();
     spriteBatch_ = std::make_unique<SpriteBatch>(device);

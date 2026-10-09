@@ -11,15 +11,13 @@
 #
 # Which of these you actually need depends on the renderer you select:
 #   CNA, SHARP_RUNTIME   always
-#   EASY_GL, META_GL     the five GL renderers (OPENGLES2/OPENGLES3/OPENGL33/WEBGL1/WEBGL2)
-#   FREE_DIRECT          FREEDIRECT only
+#   EASY_GL, META_GL     the three GL renderers (OPENGLES3/OPENGL33/WEBGL2)
 # See docs/renderers.md for the full per-renderer dependency column.
 #
 # When updating: change these, change the env: block in ci.yml, and re-run the
 # host verification matrix recorded in NEXT.md.
 
-CNA=7a64362efef4119bf880459ef1704fb2c52199e2
-SHARP_RUNTIME=f827a6c5349234d5ac938886788ed8eca8fe1c10
-EASY_GL=0b46d35c394a9fb6aea6a85c6587894b5013da33
-META_GL=571d3a62fe166b9781ac6193d137b12ff3757620
-FREE_DIRECT=934f72ff0c52902631fceeb52c006f3ed2767485
+CNA=88abe456eac110d35f4601e85ebbd2b7b8287d0b
+SHARP_RUNTIME=59454257eb1c4712ef43afd5650267c6d6b64918
+EASY_GL=1edf4c1a4708149b6a699365f43b58aa467c345f
+META_GL=3f08607a834b0c7d51d6fa60f375f89cda33a1f0
