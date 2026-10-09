@@ -259,16 +259,7 @@ jobs:
     # does not install its SDL3 under VS 2026 either (CNA plans/plan_apple_m4.md AM4-250). The
     # image matches the toolchain the pin was written against.
     runs-on: windows-2022
-    # Ninja, single-configuration, for this build and -- through CMAKE_GENERATOR -- for the SDL
-    # sub-build the pinned CNA configures without naming a generator. Under a multi-configuration
-    # Visual Studio generator that CNA builds SDL without --config (Debug) and installs it without one
-    # (Release), and "file INSTALL cannot find .../Release/SDL3.dll" followed; CNA fixed that only
-    # after the pin (57d2a760e, CNA plans/plan_apple_m4.md AM4-250).
-    env:
-      CMAKE_GENERATOR: Ninja
     steps:
-      - uses: ilammy/msvc-dev-cmd@v1
-        with: { arch: x64 }
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
@@ -282,11 +273,11 @@ jobs:
 
       - name: Configure
         working-directory: cna-template
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCNA_GRAPHICS_RENDERER=SDL_RENDERER
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCNA_GRAPHICS_RENDERER=SDL_RENDERER
 
       - name: Build
         working-directory: cna-template
-        run: cmake --build build --parallel 3
+        run: cmake --build build --config Debug --parallel 3
 
   android:
     name: Android (Gradle)
