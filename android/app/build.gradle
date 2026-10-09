@@ -76,19 +76,7 @@ android {
     }
     buildTypes {
         release {
-            if (!keystorePropertiesFile.exists()) {
-                doFirst {
-                    throw new GradleException(
-                        "\n\n" +
-                        "========================================================\n" +
-                        " ERROR: key.properties not found in android/ directory.\n" +
-                        " Cannot build a signed release APK.\n" +
-                        " See ../README.md (Android section) for instructions on\n" +
-                        " creating key.properties and a signing keystore.\n" +
-                        "========================================================\n"
-                    )
-                }
-            }
+            // Without key.properties the release tasks refuse (below); nothing else is affected.
             signingConfig signingConfigs.release
             minifyEnabled false
             debuggable false
@@ -123,6 +111,26 @@ android {
 
     lint {
         abortOnError = true
+    }
+}
+
+// A signed release APK or bundle needs key.properties. Its absence is refused by the release
+// tasks themselves, when one runs: a `doFirst` inside the release build type is not a task action,
+// and Gradle failed to evaluate this project on every checkout without key.properties -- debug
+// builds and CI included (CNA plans/plan_apple_m4.md AM4-274).
+if (!keystorePropertiesFile.exists()) {
+    tasks.matching { it.name ==~ /(assemble|bundle|package)Release/ }.configureEach {
+        doFirst {
+            throw new GradleException(
+                "\n\n" +
+                "========================================================\n" +
+                " ERROR: key.properties not found in android/ directory.\n" +
+                " Cannot build a signed release APK.\n" +
+                " See ../README.md (Android section) for instructions on\n" +
+                " creating key.properties and a signing keystore.\n" +
+                "========================================================\n"
+            )
+        }
     }
 }
 
