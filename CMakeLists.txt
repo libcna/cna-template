@@ -267,12 +267,13 @@ elseif(EMSCRIPTEN)
     target_link_libraries(${_app} PRIVATE SDL3::SDL3)
     set_target_properties(${_app} PROPERTIES SUFFIX ".html")
 
-    # CNA enables the Wasm exception-handling ABI in its own directory scope.
-    # Directory properties propagate downward only, so this target -- defined in
-    # the parent scope -- must opt in explicitly or the link fails with
-    # "wasm-ld: undefined symbol: __cpp_exception".
-    target_compile_options(${_app} PRIVATE -fwasm-exceptions)
-    target_link_options(${_app} PRIVATE -fwasm-exceptions)
+    # CNA publishes its exception ABI (-fexceptions, DISABLE_EXCEPTION_CATCHING=0)
+    # through its own targets, so this executable inherits it; forcing
+    # -fwasm-exceptions here, as the template did for the August CNA, now fails
+    # the link. Asyncify is the one part a final executable opts into itself:
+    # Game::Run() blocks, and CNA::EmscriptenAsyncify is what lets it yield to
+    # the browser (CNA docs/emscripten-mainloop-game-lifetime.md).
+    target_link_libraries(${_app} PRIVATE CNA::EmscriptenAsyncify)
 
     target_link_options(${_app} PRIVATE
         -sALLOW_MEMORY_GROWTH=1

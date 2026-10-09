@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
 
     // Heap-allocated on purpose, and this matters on the web: Emscripten ends
     // main() by throwing a JavaScript 'unwind' value so the browser can drive the
-    // main loop. That exception passes through the -fwasm-exceptions cleanup
+    // main loop. That exception passes through the C++ exception cleanup
     // landing pad, which destroys stack locals -- including a stack-allocated
     // Game -- while the main loop still holds a pointer to it. The next frame
     // then faults inside BeginDraw() with "RuntimeError: table index is out of
