@@ -295,7 +295,10 @@ jobs:
 
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
-      - uses: android-actions/setup-android@v3
+      # v4: v3 asks sdkmanager for the removed `tools` package and rejects the image's newer
+      # cmdline-tools, and failed accepting licenses on every run (fixed upstream in v4.0.2;
+      # CNA plans/plan_apple_m4.md AM4-251).
+      - uses: android-actions/setup-android@v4
 
       - name: Fetch CNA's vendored SDL submodules
         working-directory: cna
