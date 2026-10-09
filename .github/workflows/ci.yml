@@ -254,7 +254,11 @@ jobs:
 
   windows:
     name: Windows (MSVC, SDL_RENDERER)
-    runs-on: windows-latest
+    # windows-2022, not windows-latest: windows-latest moved to Visual Studio 2026, where the
+    # "Visual Studio 17 2022" generator finds no instance, and the August CNA this template pins
+    # does not install its SDL3 under VS 2026 either (CNA plans/plan_apple_m4.md AM4-250). The
+    # image matches the toolchain the pin was written against.
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
         with: { path: cna-template }
@@ -269,10 +273,7 @@ jobs:
 
       - name: Configure
         working-directory: cna-template
-        # No generator named: windows-latest moved past Visual Studio 2022, so the pinned
-        # "Visual Studio 17 2022" generator found no instance and every run stopped at configure
-        # (CNA plans/plan_apple_m4.md AM4-250). CMake picks the newest Visual Studio installed.
-        run: cmake -S . -B build -A x64 -DCNA_GRAPHICS_RENDERER=SDL_RENDERER
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCNA_GRAPHICS_RENDERER=SDL_RENDERER
 
       - name: Build
         working-directory: cna-template
