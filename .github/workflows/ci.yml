@@ -35,7 +35,7 @@ env:
   # dependencies.lock — the structure job checks that they agree. Moved to the
   # CNA apple/m4-stabilization line (owner decision, CNA plans/plan_apple_m4.md
   # AM4-291); FREEDIRECT, and with it free-direct, was retired by CNA (RRC-018).
-  CNA_REF: 90cf18d7254df984aa66e8fa8ae82c7a0d46e6da
+  CNA_REF: cec30ea3a53fcda030d50ff71a88579befa111c6
   SHARP_RUNTIME_REF: 59454257eb1c4712ef43afd5650267c6d6b64918
   EASY_GL_REF: 1edf4c1a4708149b6a699365f43b58aa467c345f
   META_GL_REF: 3f08607a834b0c7d51d6fa60f375f89cda33a1f0
