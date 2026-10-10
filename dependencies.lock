@@ -1,9 +1,10 @@
 # Compatibility baseline for cna-template.
 #
-# Compatibility baseline updated after the renderer build matrix on 2026-09-28.
-# CNA includes the verified DX11/DX12 fixes; docs/renderer-build-report.md records
-# the revisions actually tested for each group. CI pins these (.github/workflows/ci.yml); its
-# "structure" job fails if the two ever disagree.
+# Compatibility baseline: the CNA apple/m4-stabilization line (CNA plans/plan_apple_m4.md
+# AM4-291 and later), merged into next on 2026-10-10. docs/renderer-build-report.md
+# records the earlier 2026-09-28 matrix against CNA d5cf852, an ancestor of this pin.
+# CI pins these (.github/workflows/ci.yml); its "structure" job fails if the two ever
+# disagree.
 #
 # You are not required to use these: the template consumes sibling checkouts, so
 # an application can deliberately track newer revisions. They exist so that a
@@ -12,13 +13,13 @@
 #
 # Which of these you actually need depends on the renderer you select:
 #   CNA, SHARP_RUNTIME   always
-#   EASY_GL, META_GL     the five GL renderers (OPENGLES2/OPENGLES3/OPENGL33/WEBGL1/WEBGL2)
+#   EASY_GL, META_GL     the three GL renderers (OPENGLES3/OPENGL33/WEBGL2)
 # See docs/renderers.md for the full per-renderer dependency column.
 #
 # When updating: change these, change the env: block in ci.yml, and re-run the
 # host verification matrix recorded in NEXT.md.
 
-CNA=d5cf852212fb2d3a6930dfb05d95ee96be5aaa24
-SHARP_RUNTIME=007280bd1cc789f851f7f454a5041c8ce2479e13
-EASY_GL=deda7a426c3c166c0e03a4790f1ede610e2e46fb
-META_GL=20c8b2dc5bb80e32706784066db9fd9e15b3f46a
+CNA=cec30ea3a53fcda030d50ff71a88579befa111c6
+SHARP_RUNTIME=59454257eb1c4712ef43afd5650267c6d6b64918
+EASY_GL=1edf4c1a4708149b6a699365f43b58aa467c345f
+META_GL=3f08607a834b0c7d51d6fa60f375f89cda33a1f0

@@ -30,7 +30,13 @@ MANIFEST = REPO / "cmake" / "renderers.json"
 PRESETS = REPO / "CMakePresets.json"
 RENDERER_DOC = REPO / "docs" / "renderers.md"
 
-# Where CNA's canonical list lives, relative to a CNA checkout.
+# Where CNA's canonical list lives, relative to a CNA checkout. Current CNA names its public
+# identities in RendererIdentities.cmake (RRC-018 moved them there and retired the rest); older
+# checkouts spelled them as the cache variable's STRINGS in RendererSelection.cmake. Reading only
+# the old spelling found nothing in a current checkout, and the cross-check then passed vacuously
+# (CNA plans/plan_apple_m4.md AM4-291).
+CNA_IDENTITIES_FILE = Path("cmake") / "RendererIdentities.cmake"
+CNA_IDENTITIES_RE = re.compile(r"set\(CNA_RENDERER_PUBLIC_IDENTITIES\s+([A-Z0-9_\s]+)\)")
 CNA_RENDERER_FILE = Path("cmake") / "RendererSelection.cmake"
 CNA_STRINGS_RE = re.compile(
     r'set_property\(CACHE CNA_GRAPHICS_RENDERER PROPERTY STRINGS((?:\s+"[A-Z0-9_]+")+)\)'
@@ -73,12 +79,9 @@ def load_manifest() -> list[dict]:
 def canonical_from_cna() -> list[str] | None:
     """CNA's own renderer list, if a checkout is reachable."""
     for candidate in (REPO.parent / "cna", REPO / ".." / "cna"):
-        identities = candidate / "cmake" / "RendererIdentities.cmake"
+        identities = (candidate / CNA_IDENTITIES_FILE).resolve()
         if identities.exists():
-            match = re.search(
-                r"set\(CNA_RENDERER_PUBLIC_IDENTITIES\s+([^)]*)\)",
-                identities.read_text(),
-            )
+            match = CNA_IDENTITIES_RE.search(identities.read_text())
             if match:
                 return match.group(1).split()
         path = (candidate / CNA_RENDERER_FILE).resolve()

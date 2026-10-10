@@ -42,7 +42,7 @@
       "platforms": ["linux", "windows", "macos", "android"], "experimental": ["web"],
       "gate": "none",
       "display": "window", "dependency": "none", "tier": "B", "preset": true,
-      "notes": "Most portable renderer, and CNA's default off Linux. 2D only: no VertexBuffer/IndexBuffer/depth buffer. CNA documents it as untested on the web -- use WEBGL2 or CANVAS there."
+      "notes": "Most portable renderer, and CNA's default off Linux. 2D only: no VertexBuffer/IndexBuffer/depth buffer. CNA documents it as untested on the web -- use WEBGL2 there."
     },
 
     {
@@ -51,21 +51,12 @@
       "display": "window", "dependency": "system libshaderc", "tier": "C", "preset": true,
       "notes": "SDL3's own GPU abstraction. Needs libshaderc installed (libshaderc-dev)."
     },
-
     {
       "name": "OPENGLES3", "category": "gl-easygl", "dimension": "2d3d",
       "platforms": ["linux", "windows", "macos", "android"], "gate": "fatal",
       "display": "window", "dependency": "sibling ../easy-gl (which needs ../meta-gl)",
       "tier": "B", "preset": true,
       "notes": "CNA's default renderer on Linux. Internally EasyGL."
-    },
-
-    {
-      "name": "OPENGLES2", "category": "gl-easygl", "dimension": "2d3d",
-      "platforms": ["linux", "windows", "macos", "android"], "gate": "fatal",
-      "display": "window", "dependency": "sibling ../easy-gl (which needs ../meta-gl)",
-      "tier": "C", "preset": true,
-      "notes": "Internally EasyGL, GLES 2.0 profile. Cannot target the web — use WEBGL1."
     },
 
     {
@@ -83,22 +74,6 @@
       "tier": "C", "preset": true,
       "webflags": ["-sMIN_WEBGL_VERSION=2", "-sMAX_WEBGL_VERSION=2"],
       "notes": "CNA's default renderer under Emscripten. Internally EasyGL."
-    },
-
-    {
-      "name": "WEBGL1", "category": "gl-easygl", "dimension": "2d3d",
-      "platforms": ["web"], "gate": "fatal",
-      "display": "window", "dependency": "sibling ../easy-gl (which needs ../meta-gl)",
-      "tier": "C", "preset": true,
-      "webflags": ["-sMIN_WEBGL_VERSION=1", "-sMAX_WEBGL_VERSION=1"],
-      "notes": "WebGL 1 profile. Forcing MAX_WEBGL_VERSION=2 globally would break this."
-    },
-
-    {
-      "name": "OPENGL4", "category": "gl-native", "dimension": "2d3d",
-      "platforms": ["linux", "windows", "macos"], "gate": "none",
-      "display": "window", "dependency": "system OpenGL", "tier": "C", "preset": true,
-      "notes": "Real desktop OpenGL 4.x core profile, independent of EasyGL."
     },
 
     {
@@ -123,7 +98,6 @@
       "display": "window", "dependency": "Apple Metal framework", "tier": "X", "preset": true,
       "notes": "macOS only. iOS/tvOS explicitly unvalidated upstream."
     },
-
     {
       "name": "HEADLESS", "category": "cpu", "dimension": "2d3d",
       "platforms": ["linux", "windows", "macos", "android"], "experimental": ["web"],
@@ -147,31 +121,6 @@
       "display": "none", "dependency": "none", "tier": "B", "preset": true,
       "notes": "Deliberate no-op renderer. Draws nothing, touches no GPU or window."
     },
-
-    {
-      "name": "CANVAS", "category": "web-dom", "dimension": "2d",
-      "platforms": ["web"], "gate": "fatal",
-      "display": "window", "dependency": "none", "tier": "C", "preset": true,
-      "webflags": [],
-      "notes": "Browser 2D canvas context. Needs no WebGL at all."
-    },
-
-    {
-      "name": "HTML_DOM", "category": "web-dom", "dimension": "2d",
-      "platforms": ["web"], "gate": "fatal",
-      "display": "window", "dependency": "none", "tier": "C", "preset": true,
-      "webflags": [],
-      "notes": "Draws sprites as pooled CSS-transformed <div> elements. No WebGL."
-    },
-
-    {
-      "name": "SVG_DOM", "category": "web-dom", "dimension": "2d",
-      "platforms": ["web"], "gate": "fatal",
-      "display": "window", "dependency": "none", "tier": "C", "preset": true,
-      "webflags": [],
-      "notes": "Draws sprites as real <svg>/<image> elements. No WebGL."
-    },
-
     {
       "name": "FNA3D", "category": "middleware", "dimension": "2d3d",
       "platforms": ["linux", "windows", "macos"], "gate": "none",
@@ -179,26 +128,11 @@
       "tier": "C", "preset": true,
       "notes": "The XNA-shaped C library FNA renders through. Picks SDL_GPU/D3D11/GL at runtime."
     },
-
-    {
-      "name": "GDI", "category": "legacy-api", "dimension": "2d",
-      "platforms": ["windows"], "gate": "fatal",
-      "display": "window", "dependency": "Win32 GDI", "tier": "X", "preset": true,
-      "notes": "Classic Win32 GDI, 2D only."
-    },
-
     {
       "name": "DIRECTX11", "category": "directx", "dimension": "2d3d",
       "platforms": ["windows"], "gate": "fatal",
       "display": "window", "dependency": "d3d11.h/dxgi.h", "tier": "X", "preset": true,
       "notes": "Direct3D 11."
-    },
-
-    {
-      "name": "DIRECTX12", "category": "directx", "dimension": "2d3d",
-      "platforms": ["windows"], "gate": "fatal",
-      "display": "window", "dependency": "d3d12.h/dxgi.h", "tier": "X", "preset": true,
-      "notes": "Direct3D 12."
     },
 
     {

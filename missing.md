@@ -156,24 +156,6 @@ targets, it supplies a compatibility `SHARP_RUNTIME` INTERFACE target over
 CNA's own default component list. This preserves every legacy CNA tool without
 re-enabling `All`.
 
-### CNA-8 — CANVAS did not follow the `CreateRenderTargetCube` interface change
-
-`IGraphicsRenderer::CreateRenderTargetCube()` gained a third
-`preserveContents` argument. Older CNA revisions left CANVAS with the stale
-four-argument declaration and definition, so Clang rejected its non-overriding
-method marked `override` before application sources were linked.
-
-**Resolved upstream:** current CNA includes `preserveContents` in both CANVAS
-signatures. The 50-renderer verification confirmed that this form configures
-and builds under Emscripten.
-
-**Compatibility retained by this template:** for an older Emscripten CANVAS
-checkout, the template still verifies both exact stale signatures, derives
-corrected copies under the build tree, and compiles the renderer against an
-overlay header without editing CNA. When the corrected signature is already
-present, it skips the overlay. Unknown or inconsistent signature pairs remain
-a fatal error so the workaround cannot silently outlive another API change.
-
 ### CNA-9 — vendored SDL's persistent cache defaults inside the source checkout
 
 `cmake/ThirdPartySDL.cmake:20-31` chooses
@@ -283,6 +265,12 @@ the modularization, and its comment still cites this file by name.
 ---
 
 ## Obsolete
+
+### CNA-8 — CANVAS did not follow the `CreateRenderTargetCube` interface change
+
+Obsolete: CNA retired the CANVAS renderer (RRC-018), and the template now builds against the
+campaign line, so neither the stale signature nor the build-tree overlay that worked around it
+exists any more (CNA `plans/plan_apple_m4.md` AM4-291). The Web job builds WEBGL2.
 
 ### `CNA_GRAPHICS_BACKEND`'s `STRINGS` list omitted WEBGPU
 

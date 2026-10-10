@@ -1,6 +1,30 @@
 # NEXT.md — handoff
 
-## Current handoff — 2026-09-28
+## Current handoff — 2026-10-10: `apple/m4-stabilization` merged into `next`
+
+The two lines had diverged from `4d0a2c8`. The merge takes the CNA pin and the
+renderer set from `apple/m4-stabilization`: CNA `cec30ea3` (a descendant of the
+`d5cf852` that `next` pinned), sharp-runtime `59454257`, easy-gl `1edf4c1a`,
+meta-gl `3f08607a`, and exactly CNA's 14 public renderers (RRC-018 retired the
+other eight that `next` still carried). Its CI fixes (AM4-249 … AM4-305), the
+Android Gradle fixes, the libcna checkouts and the Asyncify link come with it.
+
+From `next` it keeps what still holds against that CNA: the stack-owned `Game`
+in `Program.cpp` (CNA `docs/emscripten-mainloop-game-lifetime.md` documents it
+as the contract), the window probe through
+`GetNativeWindowHandleEXT().system` (the branch's `getHandleProperty() != 0`
+reports no window on the web, where the canvas has no native handle), the
+depth-state fix for 3D renderers without a combined depth/stencil attachment,
+`cna_copy_renderer_runtime()`, `CNA_GRAPHICS_RENDERERS` validation with one
+smoke test per compiled renderer, presets in the shared build directories, and
+the `DIRECTX9` preset.
+
+Verified after the merge: generator `--check` against `../cna` (which contains
+the pin), `cmake --list-presets`, and the lock/CI pin agreement. No renderer was
+configured, built or run at the merged state; the per-renderer results below
+and in the build report are from CNA `d5cf852` and from the branch's macOS run.
+
+## Previous handoff — 2026-09-28
 
 The manifest and generated presets/docs now match CNA's 22 canonical renderers.
 All 21 requested identities (METAL excluded) built and passed three-frame smoke

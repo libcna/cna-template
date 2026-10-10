@@ -68,16 +68,6 @@
       }
     },
     {
-      "name": "opengles2",
-      "displayName": "OPENGLES2 \u2014 Internally EasyGL, GLES 2.0 profile",
-      "description": "2D3D renderer. Platforms: linux, windows, macos, android. Dependency: sibling ../easy-gl (which needs ../meta-gl).",
-      "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "OPENGLES2"
-      }
-    },
-    {
       "name": "opengl33",
       "displayName": "OPENGL33 \u2014 Internally EasyGL, desktop GL 3.3 core profile",
       "description": "2D3D renderer. Platforms: linux, windows, macos. Dependency: sibling ../easy-gl (which needs ../meta-gl).",
@@ -95,26 +85,6 @@
       "binaryDir": "${sourceDir}/build-probe",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "WEBGL2"
-      }
-    },
-    {
-      "name": "web-webgl1",
-      "displayName": "WEBGL1 \u2014 WebGL 1 profile",
-      "description": "2D3D renderer. Platforms: web. Dependency: sibling ../easy-gl (which needs ../meta-gl).",
-      "inherits": "web-base",
-      "binaryDir": "${sourceDir}/build-probe",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "WEBGL1"
-      }
-    },
-    {
-      "name": "opengl4",
-      "displayName": "OPENGL4 \u2014 Real desktop OpenGL 4.x core profile, independent of EasyGL",
-      "description": "2D3D renderer. Platforms: linux, windows, macos. Dependency: system OpenGL.",
-      "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "OPENGL4"
       }
     },
     {
@@ -183,36 +153,6 @@
       }
     },
     {
-      "name": "web-canvas",
-      "displayName": "CANVAS \u2014 Browser 2D canvas context",
-      "description": "2D renderer. Platforms: web. Dependency: none.",
-      "inherits": "web-base",
-      "binaryDir": "${sourceDir}/build-probe",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "CANVAS"
-      }
-    },
-    {
-      "name": "web-html-dom",
-      "displayName": "HTML_DOM \u2014 Draws sprites as pooled CSS-transformed <div> elements",
-      "description": "2D renderer. Platforms: web. Dependency: none.",
-      "inherits": "web-base",
-      "binaryDir": "${sourceDir}/build-probe",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "HTML_DOM"
-      }
-    },
-    {
-      "name": "web-svg-dom",
-      "displayName": "SVG_DOM \u2014 Draws sprites as real <svg>/<image> elements",
-      "description": "2D renderer. Platforms: web. Dependency: none.",
-      "inherits": "web-base",
-      "binaryDir": "${sourceDir}/build-probe",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "SVG_DOM"
-      }
-    },
-    {
       "name": "fna3d",
       "displayName": "FNA3D \u2014 The XNA-shaped C library FNA renders through",
       "description": "2D3D renderer. Platforms: linux, windows, macos. Dependency: FNA3D + MojoShader via FetchContent; needs Python3.",
@@ -223,16 +163,6 @@
       }
     },
     {
-      "name": "windows-gdi",
-      "displayName": "GDI \u2014 Classic Win32 GDI, 2D only",
-      "description": "2D renderer. Platforms: windows. Dependency: Win32 GDI.",
-      "inherits": "mingw-base",
-      "binaryDir": "${sourceDir}/build-consumer",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "GDI"
-      }
-    },
-    {
       "name": "windows-directx11",
       "displayName": "DIRECTX11 \u2014 Direct3D 11",
       "description": "2D3D renderer. Platforms: windows. Dependency: d3d11.h/dxgi.h.",
@@ -240,16 +170,6 @@
       "binaryDir": "${sourceDir}/build-consumer",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "DIRECTX11"
-      }
-    },
-    {
-      "name": "windows-directx12",
-      "displayName": "DIRECTX12 \u2014 Direct3D 12",
-      "description": "2D3D renderer. Platforms: windows. Dependency: d3d12.h/dxgi.h.",
-      "inherits": "mingw-base",
-      "binaryDir": "${sourceDir}/build-consumer",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "DIRECTX12"
       }
     },
     {
@@ -277,24 +197,12 @@
       "configurePreset": "opengles3"
     },
     {
-      "name": "opengles2",
-      "configurePreset": "opengles2"
-    },
-    {
       "name": "opengl33",
       "configurePreset": "opengl33"
     },
     {
       "name": "web-webgl2",
       "configurePreset": "web-webgl2"
-    },
-    {
-      "name": "web-webgl1",
-      "configurePreset": "web-webgl1"
-    },
-    {
-      "name": "opengl4",
-      "configurePreset": "opengl4"
     },
     {
       "name": "vulkan",
@@ -321,32 +229,12 @@
       "configurePreset": "stub"
     },
     {
-      "name": "web-canvas",
-      "configurePreset": "web-canvas"
-    },
-    {
-      "name": "web-html-dom",
-      "configurePreset": "web-html-dom"
-    },
-    {
-      "name": "web-svg-dom",
-      "configurePreset": "web-svg-dom"
-    },
-    {
       "name": "fna3d",
       "configurePreset": "fna3d"
     },
     {
-      "name": "windows-gdi",
-      "configurePreset": "windows-gdi"
-    },
-    {
       "name": "windows-directx11",
       "configurePreset": "windows-directx11"
-    },
-    {
-      "name": "windows-directx12",
-      "configurePreset": "windows-directx12"
     },
     {
       "name": "windows-directx9",
@@ -391,32 +279,8 @@
       }
     },
     {
-      "name": "opengles2",
-      "configurePreset": "opengles2",
-      "output": {
-        "outputOnFailure": true
-      },
-      "filter": {
-        "include": {
-          "label": "display"
-        }
-      }
-    },
-    {
       "name": "opengl33",
       "configurePreset": "opengl33",
-      "output": {
-        "outputOnFailure": true
-      },
-      "filter": {
-        "include": {
-          "label": "display"
-        }
-      }
-    },
-    {
-      "name": "opengl4",
-      "configurePreset": "opengl4",
       "output": {
         "outputOnFailure": true
       },
@@ -511,32 +375,8 @@
       }
     },
     {
-      "name": "windows-gdi",
-      "configurePreset": "windows-gdi",
-      "output": {
-        "outputOnFailure": true
-      },
-      "filter": {
-        "include": {
-          "label": "display"
-        }
-      }
-    },
-    {
       "name": "windows-directx11",
       "configurePreset": "windows-directx11",
-      "output": {
-        "outputOnFailure": true
-      },
-      "filter": {
-        "include": {
-          "label": "display"
-        }
-      }
-    },
-    {
-      "name": "windows-directx12",
-      "configurePreset": "windows-directx12",
       "output": {
         "outputOnFailure": true
       },

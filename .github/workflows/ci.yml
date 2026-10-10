@@ -1,6 +1,6 @@
 name: CI
 
-# Tiered on purpose. CNA has 22 renderers across five platforms, and a naive
+# Tiered on purpose. CNA has 14 renderers across five platforms, and a naive
 # "every renderer x every platform" matrix would be mostly impossible
 # combinations (a GitHub runner cannot build a DirectX renderer on Linux, or
 # Metal anywhere but macOS) and would take hours to tell you nothing.
@@ -32,11 +32,13 @@ permissions:
 
 env:
   # One place to change the validated compatibility baseline. Keep in step with
-  # dependencies.lock — the structure job checks that they agree.
-  CNA_REF: d5cf852212fb2d3a6930dfb05d95ee96be5aaa24
-  SHARP_RUNTIME_REF: 007280bd1cc789f851f7f454a5041c8ce2479e13
-  EASY_GL_REF: deda7a426c3c166c0e03a4790f1ede610e2e46fb
-  META_GL_REF: 20c8b2dc5bb80e32706784066db9fd9e15b3f46a
+  # dependencies.lock — the structure job checks that they agree. Moved to the
+  # CNA apple/m4-stabilization line (owner decision, CNA plans/plan_apple_m4.md
+  # AM4-291); FREEDIRECT, and with it free-direct, was retired by CNA (RRC-018).
+  CNA_REF: cec30ea3a53fcda030d50ff71a88579befa111c6
+  SHARP_RUNTIME_REF: 59454257eb1c4712ef43afd5650267c6d6b64918
+  EASY_GL_REF: 1edf4c1a4708149b6a699365f43b58aa467c345f
+  META_GL_REF: 3f08607a834b0c7d51d6fa60f375f89cda33a1f0
 
 jobs:
   # --- Tier A -------------------------------------------------------------
@@ -51,7 +53,7 @@ jobs:
         with: { path: cna-template }
       - uses: actions/checkout@v4
         with:
-          repository: openeggbert/cna
+          repository: libcna/cna
           ref: ${{ env.CNA_REF }}
           path: cna
 
@@ -104,24 +106,30 @@ jobs:
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/cna, ref: '${{ env.CNA_REF }}', path: cna }
+        with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+        with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
+        with: { repository: libcna/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
+        with: { repository: libcna/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
 
       - name: Install build dependencies
         run: |
           sudo apt-get update
+          # X11/Wayland headers: CNA's vendored SDL3 refuses to configure without one of them, and the
+          # hosted image no longer ships them (CNA plans/plan_apple_m4.md AM4-249).
+          # libcurl + nlohmann-json: CNA's gamer services (GS-003a) need both on desktop builds.
           sudo apt-get install -y ninja-build ccache pkg-config xvfb \
+            libcurl4-openssl-dev nlohmann-json3-dev \
+            libx11-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxfixes-dev libxss-dev \
+            libxtst-dev libwayland-dev wayland-protocols libxkbcommon-dev libudev-dev libdbus-1-dev \
             libavcodec-dev libavformat-dev libavutil-dev libswresample-dev \
             libgl1-mesa-dev libglu1-mesa-dev mesa-utils
 
-      - name: Fetch CNA's vendored SDL submodules
+      - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
 
       - uses: hendrikmuhs/ccache-action@v1
         with: { key: 'linux-${{ matrix.renderer }}' }
@@ -158,25 +166,28 @@ jobs:
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/cna, ref: '${{ env.CNA_REF }}', path: cna }
+        with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+        with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
+        with: { repository: libcna/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
+        with: { repository: libcna/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
 
       - name: Install build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build ccache pkg-config \
+            libcurl4-openssl-dev nlohmann-json3-dev \
+            libx11-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxfixes-dev libxss-dev \
+            libxtst-dev libwayland-dev wayland-protocols libxkbcommon-dev libudev-dev libdbus-1-dev \
             libavcodec-dev libavformat-dev libavutil-dev libswresample-dev \
             libgl1-mesa-dev libglu1-mesa-dev libvulkan-dev \
             libgles-dev libshaderc-dev
 
-      - name: Fetch CNA's vendored SDL submodules
+      - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
 
       - uses: hendrikmuhs/ccache-action@v1
         with: { key: 'linux-broad-${{ matrix.renderer }}' }
@@ -197,28 +208,35 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # WEBGL2 is CNA's own web default; CANVAS is the WebGL-free DOM path.
-        # Both are built to prove the per-renderer Emscripten link flags work —
-        # a single global WebGL setting would break one of them.
-        renderer: [WEBGL2, CANVAS]
+        # WEBGL2 is CNA's web default. CANVAS, the WebGL-free DOM path this matrix
+        # also built, was retired by CNA (RRC-018) and is gone from the manifest
+        # (CNA plans/plan_apple_m4.md AM4-291).
+        renderer: [WEBGL2]
     steps:
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/cna, ref: '${{ env.CNA_REF }}', path: cna }
+        with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+        with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
+        with: { repository: libcna/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
+        with: { repository: libcna/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
 
       - uses: mymindstorm/setup-emsdk@v14
         with: { version: 6.0.3 }
 
-      - name: Fetch CNA's vendored SDL submodules
+      # CNA's gamer services read the host's header-only nlohmann-json even in a cross build
+      # (CNA cmake/HeaderOnlyJson.cmake); the web build links no libcurl.
+      - name: Install host JSON headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends nlohmann-json3-dev
+
+      - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
 
       - name: Configure
         working-directory: cna-template
@@ -244,22 +262,34 @@ jobs:
 
   windows:
     name: Windows (MSVC, SDL_RENDERER)
-    runs-on: windows-latest
+    # windows-2022, not windows-latest: windows-latest moved to Visual Studio 2026, where the
+    # "Visual Studio 17 2022" generator this job and the README use finds no instance (CNA
+    # plans/plan_apple_m4.md AM4-250).
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/cna, ref: '${{ env.CNA_REF }}', path: cna }
+        with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+        with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
 
-      - name: Fetch CNA's vendored SDL submodules
+      - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
+
+      # CNA's gamer services (GS-003a) need libcurl and nlohmann-json on desktop builds. The image's
+      # own vcpkg provides both for MSVC; its toolchain file points find_package() at them.
+      - name: Install libcurl and nlohmann-json (vcpkg)
+        shell: pwsh
+        run: |
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install curl nlohmann-json --triplet x64-windows
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Configure
         working-directory: cna-template
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCNA_GRAPHICS_RENDERER=SDL_RENDERER
+        shell: pwsh
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCNA_GRAPHICS_RENDERER=SDL_RENDERER "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows
 
       - name: Build
         working-directory: cna-template
@@ -276,17 +306,27 @@ jobs:
       - uses: actions/checkout@v4
         with: { path: cna-template }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/cna, ref: '${{ env.CNA_REF }}', path: cna }
+        with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
-        with: { repository: openeggbert/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+        with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
 
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
-      - uses: android-actions/setup-android@v3
+      # v4: v3 asks sdkmanager for the removed `tools` package and rejects the image's newer
+      # cmdline-tools, and failed accepting licenses on every run (fixed upstream in v4.0.2;
+      # CNA plans/plan_apple_m4.md AM4-251).
+      - uses: android-actions/setup-android@v4
 
-      - name: Fetch CNA's vendored SDL submodules
+      - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
+
+      # CNA's gamer services read the host's header-only nlohmann-json in the NDK cross build too
+      # (CNA cmake/HeaderOnlyJson.cmake); libcurl is optional there and absent from the NDK.
+      - name: Install host JSON headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends nlohmann-json3-dev
 
       - name: Assemble debug APK
         working-directory: cna-template/android

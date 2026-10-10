@@ -12,8 +12,7 @@ Sibling repositories (all read-only from here):
 ```
 ../cna             the framework — the source of truth for everything below
 ../sharp-runtime   .NET base-class-library types CNA is built on (always required)
-../easy-gl         backs the five GL-profile renderers; itself needs ../meta-gl
-../free-direct     backs the FREEDIRECT renderer only
+../easy-gl         backs the three GL-profile renderers; itself needs ../meta-gl
 ../cna-samples     official XNA 4.0 samples ported to CNA — best porting reference
 ```
 
@@ -33,9 +32,11 @@ against `../cna` before relying on it.
 
 Concretely:
 
-- The canonical renderer list lives in **CNA**, in the
-  `set_property(CACHE CNA_GRAPHICS_RENDERER PROPERTY STRINGS ...)` line of
-  `../cna/cmake/RendererSelection.cmake`.
+- The canonical renderer list lives in **CNA**, in
+  `CNA_RENDERER_PUBLIC_IDENTITIES` in `../cna/cmake/RendererIdentities.cmake`
+  (older CNA spelled it as the `set_property(CACHE CNA_GRAPHICS_RENDERER
+  PROPERTY STRINGS ...)` line of `../cna/cmake/RendererSelection.cmake`, which
+  the template still reads as a fallback).
 - `cmake/CnaRenderers.cmake` reads that line at configure time and cross-checks it
   against this template's manifest, then re-checks against the CMake cache after
   `add_subdirectory(CNA)`. A renderer added to or removed from CNA therefore
@@ -103,9 +104,9 @@ directory, and never build under `/tmp` or the session scratchpad. See
   `SpriteBatch`, `Texture2D`, keyboard input. Anything beyond that (vertex/index
   buffers, depth state, custom effects) must be capability-gated, because the
   2D-only renderers throw on those calls.
-- Remember that four renderers open **no window at all** (`HEADLESS`, `SOFTWARE`,
-  `STUB`, `PORTABLEGL`). Code that assumes a window must probe
-  `getWindowProperty().GetNativeSdlWindowEXT()`, not assume.
+- Remember that some renderers open **no window at all** (`display: "none"` in
+  `cmake/renderers.json`). Code that assumes a window must probe
+  `getWindowProperty().GetNativeWindowHandleEXT().system`, not assume.
 - Keep sources under `game/`. A top-level `src/` or `include/` currently breaks
   the build — an upstream CNA bug documented in `missing.md`, with a preflight
   check in `CMakeLists.txt` that explains it.
@@ -115,7 +116,7 @@ directory, and never build under `/tmp` or the session scratchpad. See
 
 ## Upstream boundaries
 
-`../cna`, `../sharp-runtime`, `../easy-gl`, `../meta-gl` and `../free-direct` are
+`../cna`, `../sharp-runtime`, `../easy-gl` and `../meta-gl` are
 **read-only**. When an upstream bug blocks the template:
 
 1. Record it in `missing.md` with evidence and the concrete upstream fix.

@@ -276,8 +276,8 @@ void HelloGame::Draw3DLogoCube()
 
     device.setBlendStateProperty(BlendState::Opaque);
     // ThreeD promises the standard depth-state path. DepthStencilBuffer is the stricter CNAEXT
-    // capability for a combined depth-and-stencil attachment, so it is false on depth-only
-    // renderers such as GLIDE and must not be used to disable their real Z buffer.
+    // capability for a combined depth-and-stencil attachment, so it is false on a depth-only
+    // renderer and must not be used to disable its real Z buffer.
     device.setDepthStencilStateProperty(DepthStencilState::Default);
     device.setRasterizerStateProperty(RasterizerState::CullNone);
 

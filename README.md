@@ -34,7 +34,7 @@ loading, sprite drawing and input. Then delete `HelloGame` and write your own.
 
 - A working `Game` subclass with `LoadContent` / `Update` / `Draw`, texture
   loading, `SpriteBatch` drawing and keyboard input.
-- A build that accepts **all** of CNA's 22 renderers, and refuses invalid
+- A build that works with **any** of CNA's 14 renderers, and refuses invalid
   renderer/platform combinations with an explanation rather than a link error.
 - Ready-made presets for the common renderers, generated from one manifest.
 - A smoke test that runs in CI with no display at all.
@@ -54,9 +54,9 @@ git clone https://github.com/openeggbert/cna.git
 git clone https://github.com/openeggbert/sharp-runtime.git
 git clone https://github.com/openeggbert/cna-template.git
 
-# CNA vendors SDL as submodules and needs them present.
+# CNA vendors SDL and Draco as submodules and needs them present.
 git -C cna submodule update --init \
-    third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/enet
+    third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
 
 cd cna-template
 cmake --preset headless
@@ -80,22 +80,33 @@ also clone `easy-gl` and `meta-gl` first, see below).
 | CMake | 3.23 or newer |
 | Compiler | C++23 (GCC 14+, Clang 18+, MSVC 19.38+) |
 | Siblings | `../cna`, `../sharp-runtime` |
-| CNA submodules | `third_party/SDL`, `SDL_image`, `SDL_mixer`, `enet` |
+| CNA submodules | `third_party/SDL`, `SDL_image`, `SDL_mixer`, `draco` |
+| JSON | `nlohmann-json` 3.11+ (CNA's gamer services; host headers suffice for Web and Android) |
+| libcurl | 7.85+ on desktop targets (CNA's gamer services); optional on Android, unused on Web |
 
-On Linux you also need `pkg-config` and the FFmpeg development packages, which
-CNA's media module requires unconditionally there:
+On Linux you also need `pkg-config`, the FFmpeg development packages (CNA's
+media module requires them unconditionally there), the JSON and libcurl
+packages above, and the X11/Wayland headers CNA's vendored SDL3 configures
+against:
 
 ```bash
 sudo apt-get install -y cmake ninja-build pkg-config ccache \
-    libavcodec-dev libavformat-dev libavutil-dev libswresample-dev
+    libavcodec-dev libavformat-dev libavutil-dev libswresample-dev \
+    libcurl4-openssl-dev nlohmann-json3-dev \
+    libx11-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxfixes-dev \
+    libxss-dev libxtst-dev libwayland-dev wayland-protocols libxkbcommon-dev
 ```
+
+On macOS, `brew install nlohmann-json` (libcurl comes with the SDK). On Windows
+with MSVC, `vcpkg install curl nlohmann-json --triplet x64-windows` and pass
+vcpkg's toolchain file, as `.github/workflows/ci.yml` does.
 
 **Renderer-dependent extra checkouts** — clone these only if you use the
 renderers that need them:
 
 | Checkout | Needed by |
 | --- | --- |
-| `../easy-gl` **and** `../meta-gl` | `OPENGLES2`, `OPENGLES3`, `OPENGL33`, `WEBGL1`, `WEBGL2` |
+| `../easy-gl` **and** `../meta-gl` | `OPENGLES3`, `OPENGL33`, `WEBGL2` |
 
 `docs/renderers.md` lists the dependency for every renderer. Nothing else is a
 blanket prerequisite: most renderers need only CNA and sharp-runtime, and
@@ -126,7 +137,7 @@ Renderers with a preset:
 cmake --list-presets
 ```
 
-Everything else is selected with `-DCNA_GRAPHICS_RENDERER=<NAME>`. All 22 are
+Everything else is selected with `-DCNA_GRAPHICS_RENDERER=<NAME>`. All 14 are
 selectable either way — the presets are a convenience, not a whitelist.
 
 **➡ [docs/renderers.md](docs/renderers.md) — the full matrix**: what each
@@ -249,34 +260,30 @@ cmake --build build --config Release
 Required runtime DLLs are copied next to the executable automatically.
 
 **Cross-compiling from Linux** with the bundled MinGW-w64 toolchain — this is
-also how you build the Windows-only renderers (`DIRECTX9`, `DIRECTX11`,
-`DIRECTX12`, `GDI`):
+also how you build the Windows-only renderers (`DIRECTX9`, `DIRECTX11`):
 
 ```bash
 cmake --preset windows-directx11
 cmake --build --preset windows-directx11 -j3
 ```
 
-For a native Win32 build containing GDI and DirectX 9:
+For a native Win32 build of DirectX 9, without SDL:
 
 ```bash
 cmake -S . -B build-consumer -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/mingw-w64.cmake \
   -DCMAKE_BUILD_TYPE=Release -DCNA_PLATFORM=WIN32 \
   -DCNA_AUDIO_PLATFORM=NULL -DCNA_ENABLE_SDL=OFF -DCNA_ENABLE_NET=OFF \
-  -DCNA_GRAPHICS_RENDERER=GDI \
-  '-DCNA_GRAPHICS_RENDERERS=GDI;DIRECTX9'
+  -DCNA_GRAPHICS_RENDERER=DIRECTX9
 cmake --build build-consumer --target HelloGame --parallel
-CNA_GRAPHICS_RENDERER=DIRECTX9 WINEDLLOVERRIDES=d3d9=b wine ./build-consumer/HelloGame.exe --smoke-test
-CNA_GRAPHICS_RENDERER=GDI wine ./build-consumer/HelloGame.exe --smoke-test
+WINEDLLOVERRIDES=d3d9=b wine ./build-consumer/HelloGame.exe --smoke-test
 ```
 
-The pinned CNA revision includes the MinGW compilation and shader-reflection
-link fixes for DirectX 11/12. Both renderers built and passed a three-frame Wine
-smoke test; see [the build report](docs/renderer-build-report.md) for artifacts
-and the DX12 Wine setup. CNA still omits D3DCommon when GDI is the default of a
-build containing DirectX 11/12, so the verified Windows outputs use separate
-GDI/DX9 and DX11/DX12 configurations.
+On 2026-09-28, at CNA `d5cf852` (an ancestor of the current pin), DirectX 9 and
+DirectX 11 built this way and passed a three-frame Wine smoke test; see
+[the build report](docs/renderer-build-report.md). That matrix also covered GDI
+and DirectX 12, which CNA has since retired, and it has not been repeated at the
+current pin.
 
 `CNA_WINDOWS_DEPENDENCIES_ROOT=/path/to/mingw-prefix` remains available for a
 renderer or game that needs extra Windows-target packages. The base template
@@ -308,13 +315,12 @@ Produces `HelloGame.html` / `.js` / `.wasm` / `.data`. Serve it over HTTP —
 python3 -m http.server -d build-probe
 ```
 
-Five renderers target the web: `WEBGL2` (CNA's default), `WEBGL1`, and the three
-DOM renderers `CANVAS`, `HTML_DOM` and `SVG_DOM`, which use no WebGL at all.
-The WebGL version flags are applied **per renderer** — forcing WebGL 2 globally,
-as this template used to, silently breaks `WEBGL1`.
-When both WebGL profiles are compiled together, the template enables versions
-1 through 2. Its final web executable explicitly links CNA's Asyncify facility,
-which `Game::Run()` needs to yield animation frames while preserving the game.
+`WEBGL2` (CNA's default) is the renderer that targets the web; CNA retired the
+others (`WEBGL1` and the DOM renderers `CANVAS`, `HTML_DOM`, `SVG_DOM`). The
+WebGL flags still come **per renderer** from the manifest's `webflags`, so a web
+renderer CNA adds later gets its own instead of one global setting. The final web
+executable links CNA's Asyncify facility, which `Game::Run()` needs to yield
+animation frames while the `Game` stays an ordinary local in `main()`.
 
 ### Android
 
@@ -433,8 +439,8 @@ project, add CNA's `third_party/cgltf` and `third_party/stb` to your include
 path before `add_subdirectory(CNA)`.
 
 **`unknown renderer CNA_GRAPHICS_RENDERER='EASYGL'`** — `EASYGL` was retired as a
-renderer name; it is now the shared implementation behind `OPENGLES2`,
-`OPENGLES3`, `OPENGL33`, `WEBGL1` and `WEBGL2`. Pick one of those.
+renderer name; it is now the shared implementation behind `OPENGLES3`,
+`OPENGL33` and `WEBGL2`. Pick one of those.
 
 **`renderer 'X' cannot target Y`** — the renderer is not available on the
 platform you are building for. The message lists what does work.
