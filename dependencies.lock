@@ -19,7 +19,7 @@
 # When updating: change these, change the env: block in ci.yml, and re-run the
 # host verification matrix recorded in NEXT.md.
 
-CNA=cec30ea3a53fcda030d50ff71a88579befa111c6
-SHARP_RUNTIME=59454257eb1c4712ef43afd5650267c6d6b64918
-EASY_GL=1edf4c1a4708149b6a699365f43b58aa467c345f
-META_GL=3f08607a834b0c7d51d6fa60f375f89cda33a1f0
+CNA=10a4ef1cb4cd832f761536d77588000104947f8d
+SHARP_RUNTIME=c20373bae5be1f02d1fe2fa33c4cbba8ad05e4a0
+EASY_GL=f4d6afaf16cdc7e7e73130950bc45e6d865b41bd
+META_GL=dd3b30055d55fdc42240de7af248259338256992

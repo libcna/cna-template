@@ -1,5 +1,8 @@
 #include "HelloGame/HelloGame.hpp"
 
+#include "CNA/Version.hpp"
+#include "CnaTemplate/Version.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -139,7 +142,9 @@ void HelloGame::ReportRendererCapabilities()
     // GetGraphicsRendererName() is for display only -- never branch on it.
     // Behaviour belongs on SupportsCapability(), which reports what the renderer
     // can really do rather than what its name suggests.
-    std::cout << "cna-template: renderer " << rendererName_ << "\n"
+    std::cout << "cna-template " << CnaTemplate::getVersionString()
+              << " on CNA " << CNA::getVersionString() << "\n"
+              << "cna-template: renderer " << rendererName_ << "\n"
               << "  window          : " << (hasWindow_ ? "yes" : "no (windowless renderer)") << "\n"
               << "  3D pipeline     : " << (supportsThreeD_ ? "yes" : "no (2D only)") << "\n"
               << "  combined D/S    : " << (supportsCombinedDepthStencil_ ? "yes" : "no") << "\n"

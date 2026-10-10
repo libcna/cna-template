@@ -46,6 +46,18 @@ specific XNA features, see
 
 ---
 
+## Version
+
+Current release: **0.1.0** (pre-1.0; see [`CHANGELOG.md`](CHANGELOG.md) for what the release
+contains and [`docs/releasing.md`](docs/releasing.md) for how versions are managed). It is built
+and tested against **CNA 0.1.0** and **sharp-runtime 0.1.0**, plus **easy-gl 0.1.1** and
+**meta-gl 0.4.1** when a GL-family renderer is selected; configuration checks those versions and
+stops with the `git checkout` to run if a sibling declares another one
+(`cmake/CnaTemplateDependencies.cmake`; the exact commits are in `dependencies.lock`). Compiled
+code reads the template's own version from `CnaTemplate::getVersionString()` in
+`CnaTemplate/Version.hpp`, a header the build generates from `CMakeLists.txt`, and the game's
+banner prints it next to CNA's.
+
 ## Quick start
 
 ```bash
@@ -281,9 +293,9 @@ WINEDLLOVERRIDES=d3d9=b wine ./build-consumer/HelloGame.exe --smoke-test
 
 On 2026-09-28, at CNA `d5cf852` (an ancestor of the current pin), DirectX 9 and
 DirectX 11 built this way and passed a three-frame Wine smoke test; see
-[the build report](docs/renderer-build-report.md). That matrix also covered GDI
-and DirectX 12, which CNA has since retired, and it has not been repeated at the
-current pin.
+[the build report](docs/renderer-build-report.md). That report predates CNA's
+renderer curation and also lists renderers that no longer exist; the Windows
+matrix has not been repeated at the current pin.
 
 `CNA_WINDOWS_DEPENDENCIES_ROOT=/path/to/mingw-prefix` remains available for a
 renderer or game that needs extra Windows-target packages. The base template
@@ -315,10 +327,11 @@ Produces `HelloGame.html` / `.js` / `.wasm` / `.data`. Serve it over HTTP —
 python3 -m http.server -d build-probe
 ```
 
-`WEBGL2` (CNA's default) is the renderer that targets the web; CNA retired the
-others (`WEBGL1` and the DOM renderers `CANVAS`, `HTML_DOM`, `SVG_DOM`). The
-WebGL flags still come **per renderer** from the manifest's `webflags`, so a web
-renderer CNA adds later gets its own instead of one global setting. The final web
+`WEBGL2` (CNA's default under Emscripten) is the one renderer whose manifest
+`platforms` lists the web; `WEBGPU` additionally builds for the browser as an
+experimental target through Emscripten's Dawn port. The WebGL flags come
+**per renderer** from the manifest's `webflags`, so a web renderer CNA adds
+later gets its own instead of one global setting. The final web
 executable links CNA's Asyncify facility, which `Game::Run()` needs to yield
 animation frames while the `Game` stays an ordinary local in `main()`.
 

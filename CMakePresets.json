@@ -99,7 +99,7 @@
     },
     {
       "name": "webgpu",
-      "displayName": "WEBGPU \u2014 Despite the name this is a NATIVE renderer; CNA rejects it under Emscripten",
+      "displayName": "WEBGPU \u2014 Native wgpu-native on desktop",
       "description": "2D3D renderer. Platforms: linux, windows, macos. Dependency: wgpu-native binary release, auto-downloaded.",
       "inherits": "base",
       "binaryDir": "${sourceDir}/build",

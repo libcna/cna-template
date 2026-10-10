@@ -15,6 +15,20 @@ cmake_minimum_required(VERSION 3.23)
 
 project(CnaTemplate VERSION 0.1.0 LANGUAGES C CXX)
 
+# --- Release identity (docs/releasing.md) -------------------------------------
+# project(VERSION) accepts numeric components only, so the Semantic Versioning
+# pre-release identifier lives beside it and is joined back on here. A normal
+# variable, not a cache entry: a cached copy would keep an already-configured
+# build directory reporting the previous release after a bump.
+# CNA_TEMPLATE_VERSION_STRING is the single spelling the rest of the build reads.
+set(CNA_TEMPLATE_VERSION_PRERELEASE "")
+if(CNA_TEMPLATE_VERSION_PRERELEASE)
+    set(CNA_TEMPLATE_VERSION_STRING "${PROJECT_VERSION}-${CNA_TEMPLATE_VERSION_PRERELEASE}")
+else()
+    set(CNA_TEMPLATE_VERSION_STRING "${PROJECT_VERSION}")
+endif()
+message(STATUS "cna-template: version ${CNA_TEMPLATE_VERSION_STRING}")
+
 # --- Customization point: rename your application here -----------------------
 # Drives the executable name and the CTest name. Renaming the C++ class itself
 # is a separate step -- see "Making this your own project" in README.md.
@@ -27,6 +41,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CnaRenderers)
+include(CnaTemplateVersion)
+include(CnaTemplateDependencies)
 
 message(STATUS "cna-template: ${PROJECT_NAME} -> ${CNA_TEMPLATE_APP_NAME}")
 message(STATUS "cna-template: platform ${CMAKE_SYSTEM_NAME}, "
@@ -162,6 +178,24 @@ endforeach()
 
 add_subdirectory("${CNA_ROOT_DIR}" CNA)
 
+# The sibling releases this template requires (cmake/CnaTemplateDependencies.cmake).
+# CNA and sharp-runtime always; easy-gl and meta-gl only when CNA added them for a
+# GL-family renderer. <project>_BINARY_DIR is what each sibling's project() set.
+cna_template_require_sibling_version(CNA "${CNA_ROOT_DIR}"
+    "${CNA_BINARY_DIR}/generated/include/CNA/Version.hpp"
+    CNA_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_CNA_VERSION}")
+cna_template_require_sibling_version(sharp-runtime "${CNA_SHARP_RUNTIME_ROOT}"
+    "${SHARP_RUNTIME_BINARY_DIR}/generated/include/SharpRuntime/Version.hpp"
+    SHARP_RUNTIME_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_SHARP_RUNTIME_VERSION}")
+if(TARGET easy-gl)
+    cna_template_require_sibling_version(easy-gl "${easy-gl_SOURCE_DIR}"
+        "${easy-gl_BINARY_DIR}/include/easygl/Version.hpp"
+        EASYGL_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_EASYGL_VERSION}")
+    cna_template_require_sibling_version(meta-gl "${meta-gl_SOURCE_DIR}"
+        "${meta-gl_BINARY_DIR}/include/metagl/Version.hpp"
+        METAGL_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_METAGL_VERSION}")
+endif()
+
 # CNA's modular targets correctly use SharpRuntime::<Component>, but a few
 # ancillary upstream tools still link the legacy SHARP_RUNTIME name directly.
 # The modular runtime intentionally creates that compatibility target only for
@@ -231,7 +265,9 @@ else()
     add_executable(${_app} ${CNA_TEMPLATE_SOURCES})
 endif()
 
-target_include_directories(${_app} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/game/include")
+target_include_directories(${_app} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/game/include"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/include")   # CnaTemplate/Version.hpp
 
 # CNA propagates CNA_RENDERER_<X> to consumers through its cna_build_flags
 # INTERFACE, but applies CNA_GL_PROFILE_<X> with a directory-scoped

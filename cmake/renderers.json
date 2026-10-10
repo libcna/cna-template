@@ -86,10 +86,10 @@
 
     {
       "name": "WEBGPU", "category": "modern-gpu", "dimension": "2d3d",
-      "platforms": ["linux", "windows", "macos"], "gate": "fatal",
+      "platforms": ["linux", "windows", "macos"], "experimental": ["web"], "gate": "fatal",
       "display": "window", "dependency": "wgpu-native binary release, auto-downloaded",
       "tier": "C", "preset": true,
-      "notes": "Despite the name this is a NATIVE renderer; CNA rejects it under Emscripten."
+      "notes": "Native wgpu-native on desktop. Under Emscripten it builds through the Dawn (emdawnwebgpu) port, as CNA's own web CI does, alongside WEBGL2 in one -DCNA_GRAPHICS_RENDERERS=\"WEBGL2;WEBGPU\" build; experimental here, and the browser then needs WebGPU."
     },
 
     {

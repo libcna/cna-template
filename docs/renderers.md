@@ -41,7 +41,7 @@ If you set nothing, CNA chooses for you: `WEBGL2` on the web, `OPENGLES3` on Lin
 | Renderer | Platforms | Scope | Display | Dependency | Tested | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `VULKAN` | Linux, Windows (+ Android experimental) | 2D+3D | window | system Vulkan SDK (find_package(Vulkan REQUIRED)) | broad matrix | Real 3D via Vulkan. Builds on a CI runner but needs a real or software ICD to run. |
-| `WEBGPU` | Linux, Windows, macOS | 2D+3D | window | wgpu-native binary release, auto-downloaded | broad matrix | Despite the name this is a NATIVE renderer; CNA rejects it under Emscripten. |
+| `WEBGPU` | Linux, Windows, macOS (+ Web experimental) | 2D+3D | window | wgpu-native binary release, auto-downloaded | broad matrix | Native wgpu-native on desktop. Under Emscripten it builds through the Dawn (emdawnwebgpu) port, as CNA's own web CI does, alongside WEBGL2 in one -DCNA_GRAPHICS_RENDERERS="WEBGL2;WEBGPU" build; experimental here, and the browser then needs WebGPU. |
 | `METAL` | macOS | 2D+3D | window | Apple Metal framework | not on CI runners | macOS only. iOS/tvOS explicitly unvalidated upstream. |
 
 ## CPU / diagnostic
