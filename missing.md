@@ -11,7 +11,6 @@ read-only from here: nothing below has been patched upstream.
 | sharp-runtime | develop | `f827a6c5349234d5ac938886788ed8eca8fe1c10` |
 | easy-gl | develop | `0b46d35c394a9fb6aea6a85c6587894b5013da33` |
 | meta-gl | develop | `571d3a62fe166b9781ac6193d137b12ff3757620` |
-| free-direct | develop | `934f72ff0c52902631fceeb52c006f3ed2767485` |
 
 Every entry carried over from the previous audit was re-verified rather than
 assumed. Entries that turned out to be fixed, obsolete or simply wrong are kept
@@ -71,13 +70,14 @@ INTERFACE target (`modules/CMakeLists.txt:62-70`), but applies
 `CNA_GL_PROFILE_<X>` with a directory-scoped `add_compile_definitions()`
 (`cmake/RendererSelection.cmake:560`) that never reaches a parent-scope consumer.
 
-All five GL renderers share the define `CNA_RENDERER_EASYGL`, and the profile is
-what tells them apart. Without it, `CNA::getCurrentGraphicsRendererName()`
-compiled in a consumer's translation unit falls through to its `OPENGLES3`
-default (`modules/core/include/CNA/GraphicsRendererType.hpp:176`). So on a
-`WEBGL2`, `WEBGL1`, `OPENGL33` or `OPENGLES2` build, the application reports
-`"OPENGLES3"` while CNA's own translation units report the truth — a wrong answer
-and an ODR hazard across the same binary.
+All three GL renderers (`OPENGLES3`, `OPENGL33`, `WEBGL2`) share the define
+`CNA_RENDERER_EASYGL`, and the profile is what tells them apart. Without it,
+`CNA::getCurrentGraphicsRendererName()` compiled in a consumer's translation
+unit falls through to its `OPENGLES3` default
+(`modules/core/include/CNA/GraphicsRendererType.hpp:176`). So on a `WEBGL2` or
+`OPENGL33` build, the application reports `"OPENGLES3"` while CNA's own
+translation units report the truth — a wrong answer and an ODR hazard across
+the same binary.
 
 **Fix upstream:** add `CNA_GL_PROFILE_${CNA_GRAPHICS_RENDERER}` to
 `cna_build_flags` alongside `${CNA_RENDERER_DEFINE}`.
@@ -103,14 +103,6 @@ lines:
 
 As written, §10 does not compile.
 
-### CNA-4 — CI job selects a renderer name that no longer exists
-
-`cna/.github/workflows/input-ci.yml:106` still passes
-`-DCNA_GRAPHICS_RENDERER=EASYGL`. `EASYGL` was retired as a selector when the GL
-family split into five profile names; it now hits
-`FATAL_ERROR "Unknown graphics renderer"` at
-`cmake/RendererSelection.cmake:869`. That job cannot configure as written.
-
 ### CNA-5 — stale renderer counts inside CNA's own tooling and docs
 
 - `cna/scripts/check_renderer_identities.py` says "exactly 42" in its docstring
@@ -118,18 +110,9 @@ family split into five profile names; it now hits
 - Several `plan_*.md` files still describe `CNA_GRAPHICS_BACKEND` and reference
   `cmake/BackendSelection.cmake` / `cmake/BackendLibraries.cmake`, neither of
   which exists any more.
-- `cmake/RendererSelection.cmake:122-124` points at `BackendLibraries.cmake` for
-  the OPENGLES1 dependency gate; that gate now lives in the module.
 
 Cosmetic, but they are exactly the sort of stale prose that misled this template
 before.
-
-### CNA-6 — `CNA_SOKOL_API` accepts a value its own error message contradicts
-
-`cmake/RendererSelection.cmake:509-523`: the cache `STRINGS` list offers
-`DIRECTX11`, and `:516` accepts it, but the option's docstring and the
-unknown-value `FATAL_ERROR` both name `D3D11`. Anyone following the error message
-picks a value that is then rejected.
 
 ### CNA-7 — ancillary targets still link the legacy `SHARP_RUNTIME` umbrella
 
@@ -165,9 +148,9 @@ consumed from a read-only checkout even though both the consumer source and
 binary directories are writable.
 
 `CNA_SDL_PREBUILT_ROOT` is a working escape hatch. The local web verification
-used a persistent writable directory under `cna-template/build/` and both web
-renderers shared it. The template now makes that its default for every target,
-while preserving an explicit caller value. Upstream should default to a user
+used a persistent writable directory under `cna-template/build/`. The template
+now makes that its default for every target, while preserving an explicit
+caller value. Upstream should default to a user
 cache or binary-tree location, or at least detect a non-writable CNA source and
 choose one, while retaining the explicit cache override.
 
@@ -266,16 +249,11 @@ the modularization, and its comment still cites this file by name.
 
 ## Obsolete
 
-### CNA-8 — CANVAS did not follow the `CreateRenderTargetCube` interface change
-
-Obsolete: CNA retired the CANVAS renderer (RRC-018), and the template now builds against the
-campaign line, so neither the stale signature nor the build-tree overlay that worked around it
-exists any more (CNA `plans/plan_apple_m4.md` AM4-291). The Web job builds WEBGL2.
-
 ### `CNA_GRAPHICS_BACKEND`'s `STRINGS` list omitted WEBGPU
 
 Obsolete: the variable itself is gone (renamed `CNA_GRAPHICS_RENDERER`), and
-`WEBGPU` is one of the 46 canonical values (`cmake/RendererSelection.cmake:16`).
+`WEBGPU` is one of CNA's public renderer identities
+(`CNA_RENDERER_PUBLIC_IDENTITIES` in `cmake/RendererIdentities.cmake`).
 
 ---
 
@@ -312,7 +290,7 @@ Listed so the next session does not mistake silence for a passing result:
   `cna/docs/android-graphics-limitations.md:24-50` reports the NDK cross-compile
   failing inside sharp-runtime, while `cna/docs/devices-build.md:270-386` records
   an APK that built and ran on an emulator on 2026-07-05.
-- Emscripten 4.0.7 compiled and linked complete `WEBGL2` and `CANVAS` bundles,
+- Emscripten 4.0.7 compiled and linked a complete `WEBGL2` bundle,
   but no browser was available to this Codex session, so page startup and frame
   rendering were not observed. CI's pinned Emscripten 6.0.3 was not available
   locally either.

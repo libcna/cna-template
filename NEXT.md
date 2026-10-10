@@ -73,7 +73,6 @@ working the next time CNA's renderer count changes.
 | sharp-runtime | develop | `f827a6c5349234d5ac938886788ed8eca8fe1c10` |
 | easy-gl | develop | `0b46d35c394a9fb6aea6a85c6587894b5013da33` |
 | meta-gl | develop | `571d3a62fe166b9781ac6193d137b12ff3757620` |
-| free-direct | develop | `934f72ff0c52902631fceeb52c006f3ed2767485` |
 
 These are what `dependencies.lock` and `.github/workflows/ci.yml` pin. CNA's
 canonical renderer count at this SHA is **46**, read directly from
@@ -97,9 +96,7 @@ document.
   `-Wl,--start-group ... cna_backend_graphics_<x> ... --end-group` is gone —
   `CNA` is an INTERFACE umbrella that already carries the selected renderer
   and Sharp Runtime component targets, and a linker group around an INTERFACE
-  library expands to nothing). The one renderer-name check is a guarded,
-  temporary compatibility patch for CNA's stale CANVAS method signature
-  (`missing.md`, CNA-8), not application behavior.
+  library expands to nothing).
 - **`tools/gen_renderer_files.py`** generates `CMakePresets.json` and
   `docs/renderers.md` from the manifest, and doubles as the CI structure check
   (`--check`) and the CI matrix source (`--ci-matrix <platform> --tiers <b,c>`).

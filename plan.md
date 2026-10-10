@@ -45,14 +45,12 @@ applies.
 `CMakeLists.txt` has zero `if(CNA_GRAPHICS_RENDERER STREQUAL ...)` branches for
 application behavior. Renderer-specific facts it needs (display requirement,
 web link flags, whether the renderer is in the GL family) come from
-`cna_template_renderer_field()` reading the manifest. The guarded CANVAS check
-is a temporary source-compatibility patch for the pinned CNA defect CNA-8, not
-a renderer architecture decision; it must disappear with the upstream fix.
+`cna_template_renderer_field()` reading the manifest.
 
 `HelloGame` similarly avoids `#ifdef CNA_RENDERER_*` or name checks. It queries
 `GraphicsDevice::SupportsCapability(CNA::GraphicsCapability::X)` and probes
-`GameWindow::GetNativeSdlWindowEXT()` for "do I have a window", which is
-accurate on all 46 renderers today and stays accurate if CNA adds a 47th.
+`GameWindow::GetNativeWindowHandleEXT().system` for "do I have a window", which
+holds for every renderer CNA has today and stays accurate if CNA adds another.
 
 ### The `CNA` target is trusted, not second-guessed
 
