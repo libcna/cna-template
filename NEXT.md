@@ -1,5 +1,34 @@
 # NEXT.md — handoff
 
+## Current handoff — 2026-10-10: release 0.1.0 on CNA 0.1.0
+
+The template is pinned to the released siblings — CNA `v0.1.0` (`10a4ef1cb`), sharp-runtime
+`v0.1.0` (`c20373ba`), easy-gl `v0.1.1` (`f4d6afaf`), meta-gl `v0.4.1` (`dd3b3005`) — in
+`dependencies.lock` and `ci.yml`, and now also *requires* their versions at configure time
+(`cmake/CnaTemplateDependencies.cmake`; easy-gl/meta-gl only when a GL-family renderer is
+built). The template has a version of its own, generated into `CnaTemplate/Version.hpp`
+(`docs/releasing.md`), and the game's banner prints `cna-template <v> on CNA <v>`.
+
+Verified at this state:
+
+- Linux multi-renderer build in `build/` (Release, OPENGLES3 default plus OPENGL33, VULKAN,
+  WEBGPU, SDL_GPU, FNA3D, SDL_RENDERER, SOFTWARE, HEADLESS, STUB): configure accepts all four
+  siblings; 986 build steps, the only warnings CNA's own Release warnings from libstdc++ and
+  draco; **11/11** smoke tests — 3 `headless` directly, 8 `display` on CNA's private GPU runner;
+  and every windowed renderer shown on the real desktop, one window each, selected at run time
+  through `CNA_GRAPHICS_RENDERER`.
+- Web (Emscripten 6.0.9, `build-probe`, Release, `WEBGL2` default + `WEBGPU`): configure accepts
+  all four siblings and warns, as designed, that the web is an experimental `WEBGPU` platform;
+  672 build steps, 0 errors; `HelloGame.html/.js/.wasm/.data` produced (wasm 8.5 MB) with both
+  renderer identities compiled in. The browser run was not automated (no browser on this host);
+  CNA's own web CI builds the same pair.
+- Documentation: the manifest marks the web as an experimental `WEBGPU` platform (CNA's own web
+  CI builds `WEBGL2;WEBGPU`); README no longer names retired renderers; the 2026-09-28 build
+  report is marked historical.
+
+Not done: the Windows (MinGW/Wine), macOS and Android legs were not repeated at this pin; the
+previous handoffs below record their last results.
+
 ## Current handoff — 2026-10-10: `apple/m4-stabilization` merged into `next`
 
 The two lines had diverged from `4d0a2c8`. The merge takes the CNA pin and the

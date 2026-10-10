@@ -1,5 +1,10 @@
 # Výsledek sestavení cna-template
 
+> **Historická zpráva (2026-09-28, CNA `d5cf852`).** Matice níže vznikla před kurátorstvím
+> rendererů v CNA (RRC-018) a uvádí i renderery, které CNA od té doby odstranilo (GDI, DirectX 12,
+> OPENGLES2, WEBGL1, CANVAS, HTML_DOM, SVG_DOM, PORTABLEGL, LLGL, FREEDIRECT, …). Šablona dnes
+> podporuje přesně 14 veřejných rendererů CNA; aktuální stav je v `NEXT.md` a `CHANGELOG.md`.
+
 Datum: 2026-09-28. Z 22 aktuálních rendererů CNA byl podle zadání vynechán METAL.
 **21 z 21 požadovaných rendererů se úspěšně sestavilo a prošlo smoke testem.**
 Po dodatečném povolení zásahů do CNA byly opraveny dva blokátory kompilace
