@@ -38,146 +38,293 @@
       }
     },
     {
-      "name": "sdl-renderer",
-      "displayName": "SDL_RENDERER \u2014 Most portable renderer, and CNA's default off Linux",
-      "description": "2D renderer. Platforms: linux, windows, macos, android. Dependency: none.",
+      "name": "msvc-base",
+      "hidden": true,
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "SDL_RENDERER"
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
       }
     },
     {
-      "name": "sdl-gpu",
-      "displayName": "SDL_GPU \u2014 SDL3's own GPU abstraction",
-      "description": "2D3D renderer. Platforms: linux, windows, macos. Dependency: system libshaderc.",
+      "name": "sdlgpu",
+      "displayName": "SDLGPU (native)",
+      "description": "2D3D renderer. Platforms: linux, windows, macos. Dependency: none.",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/sdlgpu",
       "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "SDL_GPU"
+        "CNA_GRAPHICS_RENDERER": "SDLGPU"
+      },
+      "condition": {
+        "type": "anyOf",
+        "conditions": [
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Linux"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Darwin"
+          }
+        ]
+      }
+    },
+    {
+      "name": "windows-msvc-sdlgpu",
+      "displayName": "SDLGPU (windows-msvc)",
+      "description": "2D3D renderer. Platforms: linux, windows, macos. Dependency: none.",
+      "inherits": "msvc-base",
+      "binaryDir": "${sourceDir}/build/windows-msvc-sdlgpu",
+      "cacheVariables": {
+        "CNA_GRAPHICS_RENDERER": "SDLGPU"
       }
     },
     {
       "name": "opengles3",
-      "displayName": "OPENGLES3 \u2014 CNA's default renderer on Linux",
+      "displayName": "OPENGLES3 (native)",
       "description": "2D3D renderer. Platforms: linux, windows, macos, android. Dependency: sibling ../easy-gl (which needs ../meta-gl).",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/opengles3",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "OPENGLES3"
+      },
+      "condition": {
+        "type": "anyOf",
+        "conditions": [
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Linux"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Darwin"
+          }
+        ]
       }
     },
     {
       "name": "opengl33",
-      "displayName": "OPENGL33 \u2014 Internally EasyGL, desktop GL 3.3 core profile",
+      "displayName": "OPENGL33 (native)",
       "description": "2D3D renderer. Platforms: linux, windows, macos. Dependency: sibling ../easy-gl (which needs ../meta-gl).",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/opengl33",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "OPENGL33"
+      },
+      "condition": {
+        "type": "anyOf",
+        "conditions": [
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Linux"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Darwin"
+          }
+        ]
       }
     },
     {
       "name": "web-webgl2",
-      "displayName": "WEBGL2 \u2014 CNA's default renderer under Emscripten",
+      "displayName": "WEBGL2 (web)",
       "description": "2D3D renderer. Platforms: web. Dependency: sibling ../easy-gl (which needs ../meta-gl).",
       "inherits": "web-base",
-      "binaryDir": "${sourceDir}/build-probe",
+      "binaryDir": "${sourceDir}/build/web-webgl2",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "WEBGL2"
       }
     },
     {
-      "name": "vulkan",
-      "displayName": "VULKAN \u2014 Real 3D via Vulkan",
-      "description": "2D3D renderer. Platforms: linux, windows. Dependency: system Vulkan SDK (find_package(Vulkan REQUIRED)).",
+      "name": "webgpu",
+      "displayName": "WEBGPU (native)",
+      "description": "2D3D renderer. Platforms: linux, windows, macos, web. Dependency: wgpu-native binary release, auto-downloaded.",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/webgpu",
       "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "VULKAN"
+        "CNA_GRAPHICS_RENDERER": "WEBGPU"
+      },
+      "condition": {
+        "type": "anyOf",
+        "conditions": [
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Linux"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Darwin"
+          }
+        ]
       }
     },
     {
-      "name": "webgpu",
-      "displayName": "WEBGPU \u2014 Native wgpu-native on desktop",
-      "description": "2D3D renderer. Platforms: linux, windows, macos. Dependency: wgpu-native binary release, auto-downloaded.",
-      "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
+      "name": "web-webgpu",
+      "displayName": "WEBGPU (web)",
+      "description": "2D3D renderer. Platforms: linux, windows, macos, web. Dependency: wgpu-native binary release, auto-downloaded.",
+      "inherits": "web-base",
+      "binaryDir": "${sourceDir}/build/web-webgpu",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "WEBGPU"
       }
     },
     {
-      "name": "metal",
-      "displayName": "METAL \u2014 macOS only",
-      "description": "2D3D renderer. Platforms: macos. Dependency: Apple Metal framework.",
-      "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "METAL"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Darwin"
-      }
-    },
-    {
       "name": "headless",
-      "displayName": "HEADLESS \u2014 No GPU and no window at all",
+      "displayName": "HEADLESS (native)",
       "description": "2D3D renderer. Platforms: linux, windows, macos, android. Dependency: none.",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/headless",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "HEADLESS"
+      },
+      "condition": {
+        "type": "anyOf",
+        "conditions": [
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Linux"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Darwin"
+          }
+        ]
       }
     },
     {
       "name": "software",
-      "displayName": "SOFTWARE \u2014 Real CPU rasterizer",
+      "displayName": "SOFTWARE (native)",
       "description": "2D3D renderer. Platforms: linux, windows, macos, android. Dependency: none.",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/software",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "SOFTWARE"
+      },
+      "condition": {
+        "type": "anyOf",
+        "conditions": [
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Linux"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Darwin"
+          }
+        ]
       }
     },
     {
       "name": "stub",
-      "displayName": "STUB \u2014 Deliberate no-op renderer",
+      "displayName": "STUB (native)",
       "description": "2D3D renderer. Platforms: linux, windows, macos, android. Dependency: none.",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/stub",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "STUB"
+      },
+      "condition": {
+        "type": "anyOf",
+        "conditions": [
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Linux"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Darwin"
+          }
+        ]
       }
     },
     {
       "name": "fna3d",
-      "displayName": "FNA3D \u2014 The XNA-shaped C library FNA renders through",
+      "displayName": "FNA3D (native)",
       "description": "2D3D renderer. Platforms: linux, windows, macos. Dependency: FNA3D + MojoShader via FetchContent; needs Python3.",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/fna3d",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "FNA3D"
+      },
+      "condition": {
+        "type": "anyOf",
+        "conditions": [
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Linux"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+          },
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Darwin"
+          }
+        ]
       }
     },
     {
-      "name": "windows-directx11",
-      "displayName": "DIRECTX11 \u2014 Direct3D 11",
-      "description": "2D3D renderer. Platforms: windows. Dependency: d3d11.h/dxgi.h.",
-      "inherits": "mingw-base",
-      "binaryDir": "${sourceDir}/build-consumer",
-      "cacheVariables": {
-        "CNA_GRAPHICS_RENDERER": "DIRECTX11"
-      }
-    },
-    {
-      "name": "windows-directx9",
-      "displayName": "DIRECTX9 \u2014 Direct3D 9",
+      "name": "windows-mingw-directx9",
+      "displayName": "DIRECTX9 (windows-mingw)",
       "description": "2D3D renderer. Platforms: windows. Dependency: d3d9.h.",
       "inherits": "mingw-base",
-      "binaryDir": "${sourceDir}/build-consumer",
+      "binaryDir": "${sourceDir}/build/windows-mingw-directx9",
       "cacheVariables": {
         "CNA_GRAPHICS_RENDERER": "DIRECTX9"
       }
@@ -185,12 +332,13 @@
   ],
   "buildPresets": [
     {
-      "name": "sdl-renderer",
-      "configurePreset": "sdl-renderer"
+      "name": "sdlgpu",
+      "configurePreset": "sdlgpu"
     },
     {
-      "name": "sdl-gpu",
-      "configurePreset": "sdl-gpu"
+      "name": "windows-msvc-sdlgpu",
+      "configurePreset": "windows-msvc-sdlgpu",
+      "configuration": "Debug"
     },
     {
       "name": "opengles3",
@@ -205,16 +353,12 @@
       "configurePreset": "web-webgl2"
     },
     {
-      "name": "vulkan",
-      "configurePreset": "vulkan"
-    },
-    {
       "name": "webgpu",
       "configurePreset": "webgpu"
     },
     {
-      "name": "metal",
-      "configurePreset": "metal"
+      "name": "web-webgpu",
+      "configurePreset": "web-webgpu"
     },
     {
       "name": "headless",
@@ -233,18 +377,14 @@
       "configurePreset": "fna3d"
     },
     {
-      "name": "windows-directx11",
-      "configurePreset": "windows-directx11"
-    },
-    {
-      "name": "windows-directx9",
-      "configurePreset": "windows-directx9"
+      "name": "windows-mingw-directx9",
+      "configurePreset": "windows-mingw-directx9"
     }
   ],
   "testPresets": [
     {
-      "name": "sdl-renderer",
-      "configurePreset": "sdl-renderer",
+      "name": "sdlgpu",
+      "configurePreset": "sdlgpu",
       "output": {
         "outputOnFailure": true
       },
@@ -255,8 +395,8 @@
       }
     },
     {
-      "name": "sdl-gpu",
-      "configurePreset": "sdl-gpu",
+      "name": "windows-msvc-sdlgpu",
+      "configurePreset": "windows-msvc-sdlgpu",
       "output": {
         "outputOnFailure": true
       },
@@ -264,7 +404,8 @@
         "include": {
           "label": "display"
         }
-      }
+      },
+      "configuration": "Debug"
     },
     {
       "name": "opengles3",
@@ -291,32 +432,8 @@
       }
     },
     {
-      "name": "vulkan",
-      "configurePreset": "vulkan",
-      "output": {
-        "outputOnFailure": true
-      },
-      "filter": {
-        "include": {
-          "label": "display"
-        }
-      }
-    },
-    {
       "name": "webgpu",
       "configurePreset": "webgpu",
-      "output": {
-        "outputOnFailure": true
-      },
-      "filter": {
-        "include": {
-          "label": "display"
-        }
-      }
-    },
-    {
-      "name": "metal",
-      "configurePreset": "metal",
       "output": {
         "outputOnFailure": true
       },
@@ -365,30 +482,6 @@
     {
       "name": "fna3d",
       "configurePreset": "fna3d",
-      "output": {
-        "outputOnFailure": true
-      },
-      "filter": {
-        "include": {
-          "label": "display"
-        }
-      }
-    },
-    {
-      "name": "windows-directx11",
-      "configurePreset": "windows-directx11",
-      "output": {
-        "outputOnFailure": true
-      },
-      "filter": {
-        "include": {
-          "label": "display"
-        }
-      }
-    },
-    {
-      "name": "windows-directx9",
-      "configurePreset": "windows-directx9",
       "output": {
         "outputOnFailure": true
       },

@@ -12,7 +12,7 @@ if (keystorePropertiesFile.exists()) {
 def cnaRootDir = file(providers.gradleProperty("cnaRootDir").getOrElse("../cna")).canonicalFile
 
 // Override with -PcnaRenderer=OPENGLES3 to pick a renderer other than CNA's own
-// Android default (SDL_RENDERER). Not every renderer is Android-capable -- see
+// Android default (OPENGLES3). Not every renderer is Android-capable -- see
 // docs/renderers.md -- and the ones that need ../easy-gl + ../meta-gl need those
 // siblings present regardless of how this is built.
 def cnaRenderer = providers.gradleProperty("cnaRenderer").getOrElse("")

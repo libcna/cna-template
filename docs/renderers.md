@@ -3,13 +3,13 @@
 
 # CNA renderers
 
-CNA currently exposes **14 renderers**. You pick one at configure time with a single cache variable:
+CNA currently exposes **10 renderers**. You pick one at configure time with a single cache variable:
 
 ```bash
 cmake -S . -B build -DCNA_GRAPHICS_RENDERER=OPENGLES3
 ```
 
-If you set nothing, CNA chooses for you: `WEBGL2` on the web, `OPENGLES3` on Linux, `SDL_RENDERER` everywhere else.
+If you set nothing, CNA chooses `WEBGL2` on Web; `SDLGPU` on Windows, macOS, iOS; `OPENGLES3` on Linux, Android, BSD, other targets.
 
 ## How to read this
 
@@ -23,51 +23,47 @@ If you set nothing, CNA chooses for you: `WEBGL2` on the web, `OPENGLES3` on Lin
 
 ## SDL
 
-| Renderer | Platforms | Scope | Display | Dependency | Tested | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `SDL_RENDERER` | Linux, Windows, macOS, Android (+ Web experimental) | 2D | window | none | every PR | Most portable renderer, and CNA's default off Linux. 2D only: no VertexBuffer/IndexBuffer/depth buffer. CNA documents it as untested on the web -- use WEBGL2 there. |
-| `SDL_GPU` | Linux, Windows, macOS | 2D+3D | window | system libshaderc | broad matrix | SDL3's own GPU abstraction. Needs libshaderc installed (libshaderc-dev). |
+| Renderer | Platforms | Scope | Display | Dependency | Presets | Tested | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `SDLGPU` | Linux, Windows, macOS (+ iOS experimental) | 2D+3D | window | none | `sdlgpu`, `windows-msvc-sdlgpu` | broad matrix | CNA's default on Windows, macOS and iOS. SDL3 selects Vulkan, Direct3D 12 or Metal internally. |
 
 ## OpenGL family (shared EasyGL implementation)
 
-| Renderer | Platforms | Scope | Display | Dependency | Tested | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `OPENGLES3` | Linux, Windows, macOS, Android | 2D+3D | window | sibling ../easy-gl (which needs ../meta-gl) | every PR | CNA's default renderer on Linux. Internally EasyGL. |
-| `OPENGL33` | Linux, Windows, macOS | 2D+3D | window | sibling ../easy-gl (which needs ../meta-gl) | broad matrix | Internally EasyGL, desktop GL 3.3 core profile. |
-| `WEBGL2` | Web | 2D+3D | window | sibling ../easy-gl (which needs ../meta-gl) | broad matrix | CNA's default renderer under Emscripten. Internally EasyGL. |
+| Renderer | Platforms | Scope | Display | Dependency | Presets | Tested | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `OPENGLES3` | Linux, Windows, macOS, Android (+ BSD, other targets experimental) | 2D+3D | window | sibling ../easy-gl (which needs ../meta-gl) | `opengles3` | every PR | CNA's default on Linux, Android, BSD and other non-web targets. Internally EasyGL. |
+| `OPENGL33` | Linux, Windows, macOS | 2D+3D | window | sibling ../easy-gl (which needs ../meta-gl) | `opengl33` | broad matrix | Internally EasyGL, desktop GL 3.3 core profile. |
+| `WEBGL2` | Web | 2D+3D | window | sibling ../easy-gl (which needs ../meta-gl) | `web-webgl2` | broad matrix | CNA's default renderer under Emscripten. Internally EasyGL. |
 
 ## Modern GPU APIs
 
-| Renderer | Platforms | Scope | Display | Dependency | Tested | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `VULKAN` | Linux, Windows (+ Android experimental) | 2D+3D | window | system Vulkan SDK (find_package(Vulkan REQUIRED)) | broad matrix | Real 3D via Vulkan. Builds on a CI runner but needs a real or software ICD to run. |
-| `WEBGPU` | Linux, Windows, macOS (+ Web experimental) | 2D+3D | window | wgpu-native binary release, auto-downloaded | broad matrix | Native wgpu-native on desktop. Under Emscripten it builds through the Dawn (emdawnwebgpu) port, as CNA's own web CI does, alongside WEBGL2 in one -DCNA_GRAPHICS_RENDERERS="WEBGL2;WEBGPU" build; experimental here, and the browser then needs WebGPU. |
-| `METAL` | macOS | 2D+3D | window | Apple Metal framework | not on CI runners | macOS only. iOS/tvOS explicitly unvalidated upstream. |
+| Renderer | Platforms | Scope | Display | Dependency | Presets | Tested | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `WEBGPU` | Linux, Windows, macOS, Web | 2D+3D | window | wgpu-native binary release, auto-downloaded | `webgpu`, `web-webgpu` | broad matrix | Native wgpu-native on desktop. Under Emscripten it builds through the Dawn (emdawnwebgpu) port, as CNA's own web CI does, alongside WEBGL2 in one -DCNA_GRAPHICS_RENDERERS="WEBGL2;WEBGPU" build; supported, and the browser then needs WebGPU. |
 
 ## CPU / diagnostic
 
-| Renderer | Platforms | Scope | Display | Dependency | Tested | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `HEADLESS` | Linux, Windows, macOS, Android (+ Web experimental) | 2D+3D | **none** | none | every PR | No GPU and no window at all. The right choice for CI and servers. |
-| `SOFTWARE` | Linux, Windows, macOS, Android (+ Web experimental) | 2D+3D | **none** | none | every PR | Real CPU rasterizer. Creates no window and does not link SDL3, so Present() puts nothing on screen -- it is a compute/test renderer, not a display one. |
-| `STUB` | Linux, Windows, macOS, Android (+ Web experimental) | 2D+3D | **none** | none | every PR | Deliberate no-op renderer. Draws nothing, touches no GPU or window. |
+| Renderer | Platforms | Scope | Display | Dependency | Presets | Tested | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `HEADLESS` | Linux, Windows, macOS, Android (+ Web experimental) | 2D+3D | **none** | none | `headless` | every PR | No GPU and no window at all. The right choice for CI and servers. |
+| `SOFTWARE` | Linux, Windows, macOS, Android (+ Web experimental) | 2D+3D | **none** | none | `software` | every PR | Real CPU rasterizer. Creates no window, so Present() puts nothing on screen -- it is a compute/test renderer, not a display one. |
+| `STUB` | Linux, Windows, macOS, Android (+ Web experimental) | 2D+3D | **none** | none | `stub` | every PR | Deliberate no-op renderer. Draws nothing, touches no GPU or window. |
 
 ## Portable middleware
 
-| Renderer | Platforms | Scope | Display | Dependency | Tested | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `FNA3D` | Linux, Windows, macOS | 2D+3D | window | FNA3D + MojoShader via FetchContent; needs Python3 | broad matrix | The XNA-shaped C library FNA renders through. Picks SDL_GPU/D3D11/GL at runtime. |
+| Renderer | Platforms | Scope | Display | Dependency | Presets | Tested | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `FNA3D` | Linux, Windows, macOS | 2D+3D | window | FNA3D + MojoShader via FetchContent; needs Python3 | `fna3d` | broad matrix | The XNA-shaped C library FNA renders through. Picks SDL_GPU/D3D11/GL internally at runtime; SDL_GPU here is FNA3D's technology name, not CNA's SDLGPU renderer identity. |
 
 ## DirectX
 
-| Renderer | Platforms | Scope | Display | Dependency | Tested | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `DIRECTX11` | Windows | 2D+3D | window | d3d11.h/dxgi.h | not on CI runners | Direct3D 11. |
-| `DIRECTX9` | Windows | 2D+3D | window | d3d9.h | not on CI runners | Direct3D 9. |
+| Renderer | Platforms | Scope | Display | Dependency | Presets | Tested | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `DIRECTX9` | Windows | 2D+3D | window | d3d9.h | `windows-mingw-directx9` | not on CI runners | Direct3D 9. |
 
 ## Presets
 
-Renderers in common use have a ready-made preset; the rest are selected with `-DCNA_GRAPHICS_RENDERER=<NAME>` against any preset or a plain build directory. Every one of the 14 renderers above is selectable either way.
+Renderers in common use have a ready-made preset; the rest are selected with `-DCNA_GRAPHICS_RENDERER=<NAME>` against any preset or a plain build directory. Every one of the 10 renderers above is selectable either way.
 
 ```bash
 cmake --list-presets                 # what is available
@@ -76,4 +72,4 @@ cmake --build --preset opengles3     # build
 ctest --preset opengles3             # smoke test
 ```
 
-<sub>Cross-checked against CNA's own canonical list of 14 renderers at generation time.</sub>
+<sub>Cross-checked against CNA's own canonical list of 10 renderers at generation time.</sub>

@@ -1,8 +1,7 @@
 # Compatibility baseline for cna-template.
 #
-# Compatibility baseline: the CNA apple/m4-stabilization line (CNA plans/plan_apple_m4.md
-# AM4-291 and later), merged into next on 2026-10-10. docs/renderer-build-report.md
-# records the earlier 2026-09-28 matrix against CNA d5cf852, an ancestor of this pin.
+# Compatibility baseline for the CNA 0.2 development line after the public
+# SDL_GPU -> SDLGPU renderer-identity migration.
 # CI pins these (.github/workflows/ci.yml); its "structure" job fails if the two ever
 # disagree.
 #
@@ -19,7 +18,7 @@
 # When updating: change these, change the env: block in ci.yml, and re-run the
 # host verification matrix recorded in NEXT.md.
 
-CNA=10a4ef1cb4cd832f761536d77588000104947f8d
-SHARP_RUNTIME=c20373bae5be1f02d1fe2fa33c4cbba8ad05e4a0
-EASY_GL=f4d6afaf16cdc7e7e73130950bc45e6d865b41bd
-META_GL=dd3b30055d55fdc42240de7af248259338256992
+CNA=72f437fc62417a62ec2f49aa7558d199f4351af1
+SHARP_RUNTIME=1797b51b6e5ed29d2676f2c78f73adccdbbeb2c4
+EASY_GL=d911020e8cab69f5ad1e94e3a1d81d83406b4020
+META_GL=4e9f7b523c935f4159402393bf2412a21b7fd9c6

@@ -3,8 +3,8 @@
 # =============================================================================
 # Everything renderer-specific in this file is driven by cmake/renderers.json
 # (see cmake/CnaRenderers.cmake). There is deliberately no per-renderer
-# if/elseif chain here: CNA's renderer set changes (it has 14 public renderers
-# since RRC-018 retired the rest), so the template
+# if/elseif chain here: CNA's renderer set changes (it currently has 10 public
+# identities), so the template
 # treats the renderer set as data rather than as code.
 #
 # CMake 3.23 is the floor because the easy-gl/meta-gl siblings backing the
@@ -44,208 +44,122 @@ include(CnaRenderers)
 include(CnaTemplateVersion)
 include(CnaTemplateDependencies)
 
+set(CNA_TEMPLATE_CNA_MODE "SOURCE" CACHE STRING
+    "How to consume CNA: SOURCE sibling checkout or installed PACKAGE")
+set_property(CACHE CNA_TEMPLATE_CNA_MODE PROPERTY STRINGS SOURCE PACKAGE)
+string(TOUPPER "${CNA_TEMPLATE_CNA_MODE}" CNA_TEMPLATE_CNA_MODE)
+if(NOT CNA_TEMPLATE_CNA_MODE MATCHES "^(SOURCE|PACKAGE)$")
+    message(FATAL_ERROR
+        "cna-template: CNA_TEMPLATE_CNA_MODE must be SOURCE or PACKAGE, got "
+        "'${CNA_TEMPLATE_CNA_MODE}'.")
+endif()
+
 message(STATUS "cna-template: ${PROJECT_NAME} -> ${CNA_TEMPLATE_APP_NAME}")
 message(STATUS "cna-template: platform ${CMAKE_SYSTEM_NAME}, "
                "compiler ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 
 # -----------------------------------------------------------------------------
-# Upstream compatibility preflight
+# CNA framework consumption
 # -----------------------------------------------------------------------------
-# CNA's module-layout validator (cna/modules/CMakeLists.txt) aborts the build if
-# a directory named src/ or include/ exists at ${CMAKE_SOURCE_DIR}. When CNA is
-# consumed with add_subdirectory(), CMAKE_SOURCE_DIR is *this* project rather
-# than CNA -- so any consumer using the conventional src/ + include/ layout dies
-# with the confusing message "legacy global 'src/' tree reappeared at the
-# repository root". That is an upstream bug; see missing.md.
-#
-# This template therefore keeps its sources under game/. The check below exists
-# so that if you add src/ or include/ back you are told why it breaks, instead
-# of being sent to go looking inside CNA.
-foreach(_cna_template_reserved IN ITEMS src include)
-    if(EXISTS "${CMAKE_SOURCE_DIR}/${_cna_template_reserved}")
+if(CNA_TEMPLATE_CNA_MODE STREQUAL "SOURCE")
+    set(CNA_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cna" CACHE PATH
+        "Path to the CNA framework checkout")
+    if(NOT EXISTS "${CNA_ROOT_DIR}/CMakeLists.txt")
         message(FATAL_ERROR
-            "cna-template: a directory named '${_cna_template_reserved}/' at the top level of\n"
-            "this project makes CNA's module-layout validator abort the configure.\n"
-            "\n"
-            "This is an upstream CNA bug: cna/modules/CMakeLists.txt tests\n"
-            "  \${CMAKE_SOURCE_DIR}/${_cna_template_reserved}\n"
-            "which is the CONSUMER's root when CNA is added with add_subdirectory(),\n"
-            "not CNA's own root. Until it is fixed upstream, keep application sources\n"
-            "elsewhere -- this template uses game/src and game/include.\n"
-            "\n"
-            "missing.md has the one-line upstream fix.")
+            "cna-template: CNA framework not found at '${CNA_ROOT_DIR}'.\n"
+            "Clone CNA next to this repository, pass -DCNA_ROOT_DIR=/path/to/cna,\n"
+            "or use -DCNA_TEMPLATE_CNA_MODE=PACKAGE with an installed CNA SDK.")
     endif()
-endforeach()
 
-# -----------------------------------------------------------------------------
-# CNA framework location
-# -----------------------------------------------------------------------------
-# CNA is a sibling checkout, not a submodule, and is consumed with
-# add_subdirectory(): CNA installs and exports no CMake package, so
-# find_package(CNA) does not exist.
-set(CNA_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cna" CACHE PATH
-    "Path to the CNA framework checkout")
-
-if(NOT EXISTS "${CNA_ROOT_DIR}/CMakeLists.txt")
-    message(FATAL_ERROR
-        "cna-template: CNA framework not found at '${CNA_ROOT_DIR}'.\n"
-        "CNA is a separate sibling repository, not part of this template:\n"
-        "  cd ${CMAKE_CURRENT_SOURCE_DIR}/.. && git clone https://github.com/openeggbert/cna.git\n"
-        "or pass -DCNA_ROOT_DIR=/path/to/cna to cmake.\n"
-        "README.md \"Prerequisites\" lists every checkout you need.")
-endif()
-
-# -----------------------------------------------------------------------------
-# Renderer selection
-# -----------------------------------------------------------------------------
-foreach(_renderer IN LISTS CNA_GRAPHICS_RENDERERS)
-    cna_template_validate_renderer("${_renderer}" "${CNA_ROOT_DIR}")
-endforeach()
-# CNA_GRAPHICS_RENDERER is CNA's own public cache variable and this template
-# passes it straight through -- it deliberately does not re-declare a default.
-# If you set nothing, CNA picks its own (WEBGL2 on the web, OPENGLES3 on Linux,
-# SDL_RENDERER elsewhere) and the template validates the result afterwards.
-#
-# CNA also exposes one CNA_RENDERER_<NAME> boolean per renderer as an alternative input path.
-# They all default to OFF and CNA only consults them if one is switched ON, so
-# setting the string alone is sufficient and this file leaves them alone.
-if(DEFINED CNA_GRAPHICS_RENDERER AND NOT CNA_GRAPHICS_RENDERER STREQUAL "")
-    cna_template_validate_renderer("${CNA_GRAPHICS_RENDERER}" "${CNA_ROOT_DIR}")
-    message(STATUS "cna-template: renderer ${CNA_GRAPHICS_RENDERER} (requested)")
-else()
-    message(STATUS "cna-template: no renderer requested; using CNA's default for this platform")
-endif()
-
-# -----------------------------------------------------------------------------
-# CNA build options
-# -----------------------------------------------------------------------------
-# Keep CNA's own footprint small: an application needs neither the framework's
-# test suite nor its demo applications. easy-gl's gates default ON and it is
-# pulled in for the whole GL renderer family, so silence those too. meta-gl's
-# own tests already default OFF, so no BUILD_TESTING override is needed.
-set(CNA_BUILD_TESTS       OFF CACHE BOOL "Build CNA tests"                FORCE)
-set(CNA_BUILD_EXAMPLES    OFF CACHE BOOL "Build CNA example applications" FORCE)
-set(EASYGL_BUILD_TESTS    OFF CACHE BOOL "Build easy-gl tests"            FORCE)
-set(EASYGL_BUILD_EXAMPLES OFF CACHE BOOL "Build easy-gl examples"         FORCE)
-
-# CNA's vendored SDL cache defaults inside CNA's own source checkout. That is
-# unsuitable for immutable dependency checkouts and failed during the web
-# verification here. Keep the persistent, target-keyed cache in this
-# consumer's ignored build/ area unless the caller chose another location.
-# See missing.md CNA-9.
-if(NOT DEFINED CNA_SDL_PREBUILT_ROOT)
-    if(EMSCRIPTEN)
-        set(_cna_sdl_cache_target emscripten)
+    foreach(_renderer IN LISTS CNA_GRAPHICS_RENDERERS)
+        cna_template_validate_renderer("${_renderer}" "${CNA_ROOT_DIR}")
+    endforeach()
+    if(DEFINED CNA_GRAPHICS_RENDERER AND NOT CNA_GRAPHICS_RENDERER STREQUAL "")
+        cna_template_validate_renderer("${CNA_GRAPHICS_RENDERER}" "${CNA_ROOT_DIR}")
+        message(STATUS "cna-template: renderer ${CNA_GRAPHICS_RENDERER} (requested)")
     else()
-        set(_cna_sdl_cache_target
-            "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_C_COMPILER_ID}")
+        message(STATUS "cna-template: no renderer requested; using CNA's platform default")
     endif()
-    set(CNA_SDL_PREBUILT_ROOT
-        "${CMAKE_CURRENT_SOURCE_DIR}/build/cna-sdl-prebuilt-${_cna_sdl_cache_target}"
-        CACHE PATH "Persistent CNA SDL build cache outside the CNA checkout")
-endif()
 
-# CNA's modular consumption layer owns the exact Sharp Runtime component
-# closure its public targets need. CNA currently loads that layer only after it
-# has already added sharp-runtime, so an embedded build otherwise falls back to
-# SharpRuntime::All and needlessly requires optional dependencies such as zlib
-# on every cross-target. Read CNA's own list before add_subdirectory() rather
-# than duplicating it here. An application that directly uses extra Sharp
-# Runtime APIs can set SHARP_RUNTIME_COMPONENTS itself and link their narrow
-# SharpRuntime::<Component> targets.
-set(_cna_sharp_runtime_consumption
-    "${CNA_ROOT_DIR}/cmake/SharpRuntimeConsumption.cmake")
-if(EXISTS "${_cna_sharp_runtime_consumption}")
-    include("${_cna_sharp_runtime_consumption}")
-    if(NOT DEFINED SHARP_RUNTIME_COMPONENTS)
-        set(SHARP_RUNTIME_COMPONENTS "${CNA_SHARP_RUNTIME_DEFAULT_COMPONENTS}"
-            CACHE STRING "Sharp Runtime components required by CNA")
-    endif()
-endif()
+    set(CNA_BUILD_TESTS       OFF CACHE BOOL "Build CNA tests"                FORCE)
+    set(CNA_BUILD_EXAMPLES    OFF CACHE BOOL "Build CNA example applications" FORCE)
+    set(EASYGL_BUILD_TESTS    OFF CACHE BOOL "Build easy-gl tests"            FORCE)
+    set(EASYGL_BUILD_EXAMPLES OFF CACHE BOOL "Build easy-gl examples"         FORCE)
 
-# Same upstream root cause as the src/include guard above: CNA's content module
-# adds its vendored single-header include paths as ${CMAKE_SOURCE_DIR}/third_party/...,
-# which resolves into the CONSUMER's tree rather than CNA's. Building CNA as a
-# subdirectory therefore fails with "fatal error: cgltf.h: No such file or
-# directory". INCLUDE_DIRECTORIES is a directory property that subdirectories
-# inherit, so setting the correct paths here repairs the search path without
-# modifying CNA. Recorded in missing.md; remove once CNA uses its own root.
-foreach(_cna_vendored_header_dir IN ITEMS cgltf stb)
-    if(EXISTS "${CNA_ROOT_DIR}/third_party/${_cna_vendored_header_dir}")
-        include_directories("${CNA_ROOT_DIR}/third_party/${_cna_vendored_header_dir}")
-    endif()
-endforeach()
-
-add_subdirectory("${CNA_ROOT_DIR}" CNA)
-
-# The sibling releases this template requires (cmake/CnaTemplateDependencies.cmake).
-# CNA and sharp-runtime always; easy-gl and meta-gl only when CNA added them for a
-# GL-family renderer. <project>_BINARY_DIR is what each sibling's project() set.
-cna_template_require_sibling_version(CNA "${CNA_ROOT_DIR}"
-    "${CNA_BINARY_DIR}/generated/include/CNA/Version.hpp"
-    CNA_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_CNA_VERSION}")
-cna_template_require_sibling_version(sharp-runtime "${CNA_SHARP_RUNTIME_ROOT}"
-    "${SHARP_RUNTIME_BINARY_DIR}/generated/include/SharpRuntime/Version.hpp"
-    SHARP_RUNTIME_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_SHARP_RUNTIME_VERSION}")
-if(TARGET easy-gl)
-    cna_template_require_sibling_version(easy-gl "${easy-gl_SOURCE_DIR}"
-        "${easy-gl_BINARY_DIR}/include/easygl/Version.hpp"
-        EASYGL_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_EASYGL_VERSION}")
-    cna_template_require_sibling_version(meta-gl "${meta-gl_SOURCE_DIR}"
-        "${meta-gl_BINARY_DIR}/include/metagl/Version.hpp"
-        METAGL_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_METAGL_VERSION}")
-endif()
-
-# CNA's modular targets correctly use SharpRuntime::<Component>, but a few
-# ancillary upstream tools still link the legacy SHARP_RUNTIME name directly.
-# The modular runtime intentionally creates that compatibility target only for
-# the expensive All selection.  Supply an equivalent bridge over CNA's narrow
-# component set so those tools remain buildable without enabling every optional
-# component (and its cross-platform dependencies).  See missing.md CNA-7.
-if(NOT TARGET SHARP_RUNTIME
-        AND TARGET SharpRuntime::Core.Base
-        AND DEFINED CNA_SHARP_RUNTIME_DEFAULT_COMPONENTS)
-    add_library(SHARP_RUNTIME INTERFACE)
-    foreach(_sharp_component IN LISTS CNA_SHARP_RUNTIME_DEFAULT_COMPONENTS)
-        target_link_libraries(SHARP_RUNTIME INTERFACE
-            "SharpRuntime::${_sharp_component}")
-    endforeach()
-endif()
-
-# CNA has now resolved the renderer (ours or its own default) and published the
-# canonical list in the cache. Re-check both against the manifest.
-cna_template_assert_no_drift()
-cna_template_validate_renderer("${CNA_GRAPHICS_RENDERER}" "${CNA_ROOT_DIR}")
-
-cna_template_renderer_field("${CNA_GRAPHICS_RENDERER}" display   CNA_TEMPLATE_RENDERER_DISPLAY)
-cna_template_renderer_field("${CNA_GRAPHICS_RENDERER}" dimension CNA_TEMPLATE_RENDERER_DIMENSION)
-message(STATUS "cna-template: renderer ${CNA_GRAPHICS_RENDERER} "
-               "(${CNA_TEMPLATE_RENDERER_DIMENSION}, display: ${CNA_TEMPLATE_RENDERER_DISPLAY})")
-
-# sharp-runtime's RandomAccess.cpp defines the native-only ThrowNative helper
-# on Emscripten too. The platform branches never call it there, so the module's
-# own -Werror turns Clang's -Wunused-function warning into a build failure.
-# Keep the compatibility exception on that one source file; see missing.md
-# SHARP-RUNTIME-2. Remove this once upstream guards or annotates the helper.
-if(EMSCRIPTEN AND TARGET sharp_runtime_io)
-    set_property(SOURCE
-        "${CNA_SHARP_RUNTIME_ROOT}/modules/io/src/System/IO/RandomAccess.cpp"
-        TARGET_DIRECTORY sharp_runtime_io
-        APPEND PROPERTY COMPILE_OPTIONS -Wno-error=unused-function)
-endif()
-
-# SDL's IMPORTED targets are created by find_package() inside CNA's directory
-# scope, so they are not visible up here. Re-importing is cheap and idempotent:
-# CNA has already cached each *_DIR pointing at the libraries it built. All
-# three must be visible here so cna_copy_sdl_runtime() can package their DLLs.
-# This must come after add_subdirectory() for exactly that reason.
-if(NOT CNA_ENABLE_SDL STREQUAL "OFF")
-    foreach(_sdl_package IN ITEMS SDL3 SDL3_image SDL3_mixer)
-        if(NOT TARGET ${_sdl_package}::${_sdl_package})
-            find_package(${_sdl_package} REQUIRED CONFIG)
+    # Keep CNA's persistent SDL cache outside an immutable dependency checkout.
+    if(NOT DEFINED CNA_SDL_PREBUILT_ROOT)
+        if(EMSCRIPTEN)
+            set(_cna_sdl_cache_target emscripten)
+        else()
+            set(_cna_sdl_cache_target
+                "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_C_COMPILER_ID}")
         endif()
-    endforeach()
+        set(CNA_SDL_PREBUILT_ROOT
+            "${CMAKE_CURRENT_SOURCE_DIR}/build/cna-sdl-prebuilt-${_cna_sdl_cache_target}"
+            CACHE PATH "Persistent CNA SDL build cache outside the CNA checkout")
+    endif()
+
+    add_subdirectory("${CNA_ROOT_DIR}" CNA)
+
+    cna_template_require_sibling_version(CNA "${CNA_ROOT_DIR}"
+        "${CNA_BINARY_DIR}/generated/include/CNA/Version.hpp"
+        CNA_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_CNA_VERSION}")
+    cna_template_require_sibling_version(sharp-runtime "${CNA_SHARP_RUNTIME_ROOT}"
+        "${SHARP_RUNTIME_BINARY_DIR}/generated/include/SharpRuntime/Version.hpp"
+        SHARP_RUNTIME_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_SHARP_RUNTIME_VERSION}")
+    if(TARGET easy-gl)
+        cna_template_require_sibling_version(easy-gl "${easy-gl_SOURCE_DIR}"
+            "${easy-gl_BINARY_DIR}/include/easygl/Version.hpp"
+            EASYGL_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_EASYGL_VERSION}")
+        cna_template_require_sibling_version(meta-gl "${meta-gl_SOURCE_DIR}"
+            "${meta-gl_BINARY_DIR}/include/metagl/Version.hpp"
+            METAGL_VERSION_STRING "${CNA_TEMPLATE_REQUIRED_METAGL_VERSION}")
+    endif()
+
+    cna_template_assert_no_drift()
+    cna_template_validate_renderer("${CNA_GRAPHICS_RENDERER}" "${CNA_ROOT_DIR}")
+    set(_cna_template_renderer "${CNA_GRAPHICS_RENDERER}")
+    set(_cna_template_link_target CNA)
+else()
+    find_package(CNA CONFIG REQUIRED)
+    if(NOT TARGET CNA::CNA)
+        message(FATAL_ERROR "cna-template: installed CNA package does not export CNA::CNA")
+    endif()
+    if(NOT COMMAND cna_deploy_runtime)
+        message(FATAL_ERROR
+            "cna-template: installed CNA package predates cna_deploy_runtime(); "
+            "install a newer CNA C++ SDK")
+    endif()
+    if(DEFINED CNA_RUNTIME_VERSION AND
+       CNA_RUNTIME_VERSION VERSION_LESS CNA_TEMPLATE_REQUIRED_CNA_VERSION)
+        message(FATAL_ERROR
+            "cna-template: CNA runtime ${CNA_RUNTIME_VERSION} is older than required "
+            "${CNA_TEMPLATE_REQUIRED_CNA_VERSION}")
+    endif()
+
+    set(CNA_TEMPLATE_PACKAGE_RENDERER "" CACHE STRING
+        "Renderer identity compiled into the installed CNA SDK (descriptive, not a selector)")
+    if(CNA_TEMPLATE_PACKAGE_RENDERER STREQUAL "")
+        message(FATAL_ERROR
+            "cna-template: PACKAGE mode needs -DCNA_TEMPLATE_PACKAGE_RENDERER=<NAME>.\n"
+            "The installed SDK is already compiled for that renderer; this value only describes it.")
+    endif()
+    cna_template_validate_renderer("${CNA_TEMPLATE_PACKAGE_RENDERER}" "")
+    set(_cna_template_renderer "${CNA_TEMPLATE_PACKAGE_RENDERER}")
+    set(_cna_template_link_target CNA::CNA)
 endif()
+
+if(NOT COMMAND cna_deploy_runtime)
+    message(FATAL_ERROR
+        "cna-template: selected CNA revision predates cna_deploy_runtime(); use a newer CNA")
+endif()
+
+cna_template_renderer_field("${_cna_template_renderer}" display
+    CNA_TEMPLATE_RENDERER_DISPLAY)
+cna_template_renderer_field("${_cna_template_renderer}" dimension
+    CNA_TEMPLATE_RENDERER_DIMENSION)
+message(STATUS "cna-template: renderer ${_cna_template_renderer} "
+               "(${CNA_TEMPLATE_RENDERER_DIMENSION}, display: ${CNA_TEMPLATE_RENDERER_DISPLAY})")
 
 # -----------------------------------------------------------------------------
 # The application
@@ -277,9 +191,9 @@ target_include_directories(${_app} PRIVATE
 # and misreports OPENGL33/WEBGL2 in *our* translation units
 # while CNA's own report the truth. Re-applying it here restores agreement.
 # Upstream fix recorded in missing.md.
-cna_template_renderer_field("${CNA_GRAPHICS_RENDERER}" category _renderer_category)
+cna_template_renderer_field("${_cna_template_renderer}" category _renderer_category)
 if(_renderer_category STREQUAL "gl-easygl")
-    target_compile_definitions(${_app} PRIVATE "CNA_GL_PROFILE_${CNA_GRAPHICS_RENDERER}")
+    target_compile_definitions(${_app} PRIVATE "CNA_GL_PROFILE_${_cna_template_renderer}")
 endif()
 
 # CNA is an INTERFACE umbrella already carrying every framework module, the
@@ -289,29 +203,15 @@ endif()
 # obsolete. So is the old -Wl,--start-group wrapper: CNA declares its
 # static-library cycles on the targets themselves, and a linker group around an
 # INTERFACE library expands to nothing anyway.
-target_link_libraries(${_app} PRIVATE CNA)
-
-# CNA owns renderer-specific runtime payload knowledge. Ask it to deploy any
-# selected renderer's shared libraries beside this final executable.
-if(COMMAND cna_copy_renderer_runtime)
-    cna_copy_renderer_runtime(${_app})
-endif()
-
-if(TARGET SDL3::SDL3main)
-    target_link_libraries(${_app} PRIVATE SDL3::SDL3main)
-endif()
+target_link_libraries(${_app} PRIVATE ${_cna_template_link_target})
 
 # -----------------------------------------------------------------------------
 # Platform specifics
 # -----------------------------------------------------------------------------
 if(ANDROID)
-    # CNA links android/log PUBLIC on its own device module, so they arrive
-    # through the umbrella; only SDL3 has to be named here.
-    target_link_libraries(${_app} PRIVATE SDL3::SDL3)
     # Assets are packaged into the APK -- see android/app/build.gradle.
 
 elseif(EMSCRIPTEN)
-    target_link_libraries(${_app} PRIVATE SDL3::SDL3)
     set_target_properties(${_app} PROPERTIES SUFFIX ".html")
 
     # CNA publishes its exception ABI (-fexceptions, DISABLE_EXCEPTION_CATCHING=0)
@@ -334,7 +234,7 @@ elseif(EMSCRIPTEN)
     # WebGL version constraints are per renderer, not global: pinning
     # MIN/MAX_WEBGL_VERSION=2 for every web build would bind every future web
     # renderer to WebGL 2, whatever its manifest says.
-    cna_template_renderer_field("${CNA_GRAPHICS_RENDERER}" webflags _webflags)
+    cna_template_renderer_field("${_cna_template_renderer}" webflags _webflags)
     if(_webflags)
         target_link_options(${_app} PRIVATE ${_webflags})
     endif()
@@ -351,34 +251,8 @@ else()
     endif()
 endif()
 
-if(WIN32 AND NOT CNA_ENABLE_SDL STREQUAL "OFF")
-    # CNA defines these helpers; CMake functions are global once defined, so they
-    # are callable here after add_subdirectory(). Fall back to CMake's own
-    # TARGET_RUNTIME_DLLS if a CNA revision does not provide them.
-    if(COMMAND cna_copy_sdl_runtime)
-        cna_copy_sdl_runtime(${_app})
-    else()
-        add_custom_command(TARGET ${_app} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "$<TARGET_RUNTIME_DLLS:${_app}>" "$<TARGET_FILE_DIR:${_app}>"
-            COMMAND_EXPAND_LISTS
-            COMMENT "Copying runtime DLLs next to ${_app}")
-    endif()
-endif()
-
-if(MINGW)
-    # CNA's full RTTI graph is not compatible with MinGW's static libstdc++:
-    # PE-COFF fails to fold the inline std::type_info::operator== emitted by
-    # cna_runtime against the identical copy in libstdc++.a. Use the dynamic
-    # runtime and ask CNA to package its DLLs next to the executable instead.
-    if(COMMAND cna_copy_mingw_cxx_runtime)
-        cna_copy_mingw_cxx_runtime(${_app})
-    else()
-        message(WARNING
-            "cna-template: this CNA revision does not provide "
-            "cna_copy_mingw_cxx_runtime(); copy the MinGW GCC and C++ runtime "
-            "DLLs next to ${_app} before running it.")
-    endif()
+if(NOT ANDROID)
+    cna_deploy_runtime(${_app})
 endif()
 
 # -----------------------------------------------------------------------------
@@ -405,17 +279,19 @@ if(CNA_TEMPLATE_BUILD_TESTS AND NOT ANDROID AND NOT EMSCRIPTEN AND NOT CMAKE_CRO
         TIMEOUT 30
         LABELS "${_labels}")
 
-    foreach(_renderer IN LISTS CNA_GRAPHICS_RENDERERS)
-        cna_template_renderer_field("${_renderer}" display _display)
-        if(_display STREQUAL "none")
-            set(_labels headless)
-        else()
-            set(_labels display)
-        endif()
-        add_test(NAME ${CNA_TEMPLATE_APP_NAME}Smoke_${_renderer}
-            COMMAND ${_app} --smoke-test)
-        set_tests_properties(${CNA_TEMPLATE_APP_NAME}Smoke_${_renderer} PROPERTIES
-            ENVIRONMENT "CNA_GRAPHICS_RENDERER=${_renderer}"
-            TIMEOUT 30 LABELS "${_labels}")
-    endforeach()
+    if(CNA_TEMPLATE_CNA_MODE STREQUAL "SOURCE")
+        foreach(_renderer IN LISTS CNA_GRAPHICS_RENDERERS)
+            cna_template_renderer_field("${_renderer}" display _display)
+            if(_display STREQUAL "none")
+                set(_labels headless)
+            else()
+                set(_labels display)
+            endif()
+            add_test(NAME ${CNA_TEMPLATE_APP_NAME}Smoke_${_renderer}
+                COMMAND ${_app} --smoke-test)
+            set_tests_properties(${CNA_TEMPLATE_APP_NAME}Smoke_${_renderer} PROPERTIES
+                ENVIRONMENT "CNA_GRAPHICS_RENDERER=${_renderer}"
+                TIMEOUT 30 LABELS "${_labels}")
+        endforeach()
+    endif()
 endif()

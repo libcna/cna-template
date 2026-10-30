@@ -1,5 +1,23 @@
 # NEXT.md — handoff
 
+## Current handoff — 2026-10-30: CNA 0.2 renderer migration
+
+- The manifest follows CNA's ten identities and the new `SDLGPU` spelling.
+- Presets are route-aware and use separate build directories.
+- SOURCE and installed PACKAGE consumption are implemented; PACKAGE mode needs
+  `CNA_TEMPLATE_PACKAGE_RENDERER` until CNA exports the SDK's compiled identity.
+- Runtime deployment is delegated to `cna_deploy_runtime()`.
+- Android defaults to OPENGLES3 and declares GLES 3 as required.
+- Local verification against CNA `72f437fc`:
+  generator drift check and preset parsing pass; CNA's strict platform ratchet
+  passes at zero files/references; SOURCE-mode HEADLESS configures, builds and
+  passes 1/1 smoke test; an installed HEADLESS SDK configures and builds in
+  PACKAGE mode and passes 1/1 smoke test.
+
+The exact CNA commit is pinned in `dependencies.lock` and CI. The older handoffs
+below are historical records and intentionally retain their then-valid renderer
+names and results.
+
 ## Current handoff — 2026-10-10: release 0.1.0 on CNA 0.1.0
 
 The template is pinned to the released siblings — CNA `v0.1.0` (`10a4ef1cb`), sharp-runtime
@@ -58,8 +76,8 @@ and in the build report are from CNA `d5cf852` and from the branch's macOS run.
 The manifest and generated presets/docs now match CNA's 22 canonical renderers.
 All 21 requested identities (METAL excluded) built and passed three-frame smoke
 tests: 12 native Linux, five web renderers in Chrome, and GDI/DX9/DX11/DX12
-through MinGW/Wine. The report records the exact revisions per group and outputs:
-[renderer build report](docs/renderer-build-report.md).
+through MinGW/Wine. Git history retains the historical renderer build report
+with the exact per-group revisions and outputs.
 
 CNA DX-271 fixes the two MinGW compiler defects and the newly approved
 shader-reflection linker defect. `dependencies.lock` and CI now pin

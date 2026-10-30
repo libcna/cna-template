@@ -59,7 +59,7 @@ tag selects none of them, so each release records them twice:
 - `dependencies.lock` and the `*_REF` values in `.github/workflows/ci.yml` — the exact
   **commits** (the structure job checks the two agree).
 
-CNA 0.1.0 itself enforces its own sharp-runtime/easy-gl/meta-gl versions
+CNA enforces its own sharp-runtime/easy-gl/meta-gl versions
 (`cna/cmake/DependencyVersions.cmake`), so the four siblings move together.
 
 ## Pre-1.0 policy
@@ -87,20 +87,21 @@ While the major version is 0, a minor bump may change anything. Pre-release iden
 
    ```bash
    export CCACHE_DIR=/rv/cnaccache CCACHE_BASEDIR=/rv
-   cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCNA_GRAPHICS_RENDERER=OPENGLES3 \
-       -DCNA_GRAPHICS_RENDERERS="OPENGLES3;OPENGL33;VULKAN;WEBGPU;SDL_GPU;FNA3D;SDL_RENDERER;SOFTWARE;HEADLESS;STUB" \
+   cmake -S . -B build/release-native -G Ninja -DCMAKE_BUILD_TYPE=Release \
+       -DCNA_GRAPHICS_RENDERER=OPENGLES3 \
+       -DCNA_GRAPHICS_RENDERERS="OPENGLES3;OPENGL33;WEBGPU;SDLGPU;FNA3D;SOFTWARE;HEADLESS;STUB" \
        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache
-   cmake --build build --parallel
-   ctest --test-dir build -L headless --output-on-failure
-   ../cna/tools/platform/run_gpu_tests_private.sh "$PWD/build" -L display --output-on-failure
+   cmake --build build/release-native --parallel 3
+   ctest --test-dir build/release-native -L headless --output-on-failure
+   ../cna/tools/platform/run_gpu_tests_private.sh "$PWD/build/release-native" -L display --output-on-failure
    ```
 
    and the web build (`source ~/emsdk/emsdk_env.sh` first):
 
    ```bash
-   emcmake cmake -S . -B build-probe -G Ninja -DCMAKE_BUILD_TYPE=Release \
+   emcmake cmake -S . -B build/release-web -G Ninja -DCMAKE_BUILD_TYPE=Release \
        -DCNA_GRAPHICS_RENDERER=WEBGL2 -DCNA_GRAPHICS_RENDERERS="WEBGL2;WEBGPU"
-   cmake --build build-probe --parallel
+   cmake --build build/release-web --parallel 3
    ```
 
    The configure output prints `-- cna-template: version <x.y.z>` and one accepted-version line

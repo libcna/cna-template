@@ -9,6 +9,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). While the
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the manifest to CNA's ten current renderer identities, including the
+  `SDLGPU` spelling and platform defaults sourced from manifest data.
+- Added route-aware native, Web, MSVC and MinGW presets with isolated build
+  directories; WEBGPU now has both native and browser presets.
+- Added explicit SOURCE and installed PACKAGE CNA consumption modes and replaced
+  manual SDL/renderer/MinGW copying with `cna_deploy_runtime()`.
+- Updated Android's default contract to OPENGLES3/GLES 3 and refreshed CI and
+  documentation for the curated renderer set.
+
 ## [0.1.0] — 2026-10-10
 
 First tagged release. The template has declared 0.1.0 in `project()` since its first commit; this
@@ -46,8 +57,6 @@ the release contains, not what changed since a previous tag.
 - The manifest marks the web as an *experimental* platform of `WEBGPU`, as CNA's own web CI
   builds `WEBGL2;WEBGPU` together under Emscripten through the Dawn port; the browser then needs
   WebGPU. `WEBGL2` remains the only web renderer with a preset.
-- `README.md` no longer names the renderers CNA retired; `docs/renderer-build-report.md` and the
-  older `NEXT.md` sections are kept as dated history and say so.
 
 ### Dependencies
 

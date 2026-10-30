@@ -3,6 +3,33 @@
 Bugs and gaps in repositories this template consumes. Those repositories are
 read-only from here: nothing below has been patched upstream.
 
+## Current status — 2026-10-30
+
+The current CNA 0.2 development line has fixed the old consumer-root,
+Sharp Runtime ordering/compatibility, README `Present()` and Emscripten
+`ThrowNative` defects recorded by the 2026-08 audit below. The template has
+removed those workarounds and now delegates runtime packaging to
+`cna_deploy_runtime()`.
+
+Three integration gaps remain:
+
+- **CNA-2:** `CNA_GL_PROFILE_*` is still directory-scoped rather than exported
+  on `CNA::BuildConfig`. The template reapplies the selected GL profile to its
+  executable in SOURCE and PACKAGE modes.
+- **CNA-9:** vendored SDL's persistent cache defaults inside the CNA checkout.
+  SOURCE mode redirects `CNA_SDL_PREBUILT_ROOT` into the template's ignored
+  `build/` directory unless the caller supplies another writable location.
+- **CNA-10:** an installed C++ SDK does not publish the renderer identity it was
+  compiled for. PACKAGE mode therefore requires the descriptive
+  `CNA_TEMPLATE_PACKAGE_RENDERER` value; it does not select or rebuild the SDK.
+
+The former `CNA_GRAPHICS_BACKEND` vocabulary, removed renderer identities and
+14/22/46-renderer inventories below are historical evidence, not current build
+guidance. CNA currently exposes ten identities and spells the modern SDL
+renderer `SDLGPU`.
+
+## Archived audit — 2026-08-11
+
 **Re-audited: 2026-08-11**, against:
 
 | Repo | Branch | SHA |
@@ -19,9 +46,9 @@ the finding itself.
 
 ---
 
-## Open
+### Open at the time of the audit
 
-### CNA-1 — `CMAKE_SOURCE_DIR` is used where CNA's own root is meant (blocker)
+#### CNA-1 — `CMAKE_SOURCE_DIR` is used where CNA's own root is meant (blocker)
 
 **Severity: blocks every downstream consumer.**
 
@@ -63,7 +90,7 @@ forces OFF), so not currently blocking: `cmake/Harnesses.cmake:205-211` and
 `cmake/UnitTests.cmake:323+` build helper-script paths from
 `${CMAKE_SOURCE_DIR}/scripts/...`, plus many `modules/*/examples/CMakeLists.txt`.
 
-### CNA-2 — `CNA_GL_PROFILE_*` does not reach consumers, so the renderer misreports itself
+#### CNA-2 — `CNA_GL_PROFILE_*` does not reach consumers, so the renderer misreports itself
 
 CNA propagates `CNA_RENDERER_<X>` to consumers through the `cna_build_flags`
 INTERFACE target (`modules/CMakeLists.txt:62-70`), but applies
@@ -85,7 +112,7 @@ the same binary.
 **What this template does meanwhile:** re-applies the profile define to its own
 target when the selected renderer is in the GL family (`CMakeLists.txt`).
 
-### CNA-3 — CNA's README §10 usage example is wrong and does not compile
+#### CNA-3 — CNA's README §10 usage example is wrong and does not compile
 
 `cna/README.md` §10 (the example at `:588-600`) still tells readers to call
 `device.Present()` inside `Draw()`. It should not: `Game::EndDraw()` already
@@ -103,7 +130,7 @@ lines:
 
 As written, §10 does not compile.
 
-### CNA-5 — stale renderer counts inside CNA's own tooling and docs
+#### CNA-5 — stale renderer counts inside CNA's own tooling and docs
 
 - `cna/scripts/check_renderer_identities.py` says "exactly 42" in its docstring
   (`:4`, `:19`) while its own table holds 46. The table is right.
@@ -114,7 +141,7 @@ As written, §10 does not compile.
 Cosmetic, but they are exactly the sort of stale prose that misled this template
 before.
 
-### CNA-7 — ancillary targets still link the legacy `SHARP_RUNTIME` umbrella
+#### CNA-7 — ancillary targets still link the legacy `SHARP_RUNTIME` umbrella
 
 The modular sharp-runtime creates the compatibility target `SHARP_RUNTIME`
 only when component `All` is selected
@@ -139,7 +166,7 @@ targets, it supplies a compatibility `SHARP_RUNTIME` INTERFACE target over
 CNA's own default component list. This preserves every legacy CNA tool without
 re-enabling `All`.
 
-### CNA-9 — vendored SDL's persistent cache defaults inside the source checkout
+#### CNA-9 — vendored SDL's persistent cache defaults inside the source checkout
 
 `cmake/ThirdPartySDL.cmake:20-31` chooses
 `${CMAKE_CURRENT_SOURCE_DIR}/.sdl-prebuilt-<target>` and then configures, builds
@@ -154,7 +181,7 @@ caller value. Upstream should default to a user
 cache or binary-tree location, or at least detect a non-writable CNA source and
 choose one, while retaining the explicit cache override.
 
-### SHARP-RUNTIME-1 — default `All` selection pulls zlib into every CNA consumer
+#### SHARP-RUNTIME-1 — default `All` selection pulls zlib into every CNA consumer
 
 Previously filed against `sharp-runtime/CMakeLists.txt:5`; that line no longer
 exists. After modularization the same call is at
@@ -203,7 +230,7 @@ builds. This is still an upstream ordering issue: CNA already owns the right
 list, but must apply it before adding sharp-runtime. Once it does, the template
 preload can be removed.
 
-### SHARP-RUNTIME-2 — Emscripten rejects an unused native-only helper
+#### SHARP-RUNTIME-2 — Emscripten rejects an unused native-only helper
 
 `modules/io/src/System/IO/RandomAccess.cpp:91-93` defines `NativeDetail()` and
 `ThrowNative()` outside the platform branches. Every use of `ThrowNative()` is
@@ -221,7 +248,7 @@ Emscripten. The warning remains visible; only its promotion to an error is
 disabled. No warning policy is weakened for the application, CNA, or any other
 Sharp Runtime source.
 
-### MOBILE-EGGBERT-1 — stray `include_directories(... CNA)`
+#### MOBILE-EGGBERT-1 — stray `include_directories(... CNA)`
 
 `mobile-eggbert/CMakeLists.txt:88` still has it. Separately, mobile-eggbert is
 now stale in its own right (last commit 2026-07-16, still using
@@ -231,25 +258,25 @@ checking every claim against CNA first.
 
 ---
 
-## Fixed upstream — verified still fixed
+### Fixed upstream — verified still fixed
 
-### `Clear(const Color&)` crashed on SDL_RENDERER
+#### `Clear(const Color&)` crashed on SDL_RENDERER
 
 Fixed, and improved since: `modules/graphics/src/Xna/GraphicsDevice.cpp:415-425`
 now masks depth and stencil independently via `SupportsDepthBuffer()` /
 `SupportsStencilBuffer()` (`:492-504`). `Clear(const Color&)` is safe on every
 renderer. The template no longer carries a workaround.
 
-### Double renderer reconfiguration during startup
+#### Double renderer reconfiguration during startup
 
 Fixed in `modules/runtime/src/GraphicsDeviceManager.cpp:60-79`. The fix survived
 the modularization, and its comment still cites this file by name.
 
 ---
 
-## Obsolete
+### Obsolete
 
-### `CNA_GRAPHICS_BACKEND`'s `STRINGS` list omitted WEBGPU
+#### `CNA_GRAPHICS_BACKEND`'s `STRINGS` list omitted WEBGPU
 
 Obsolete: the variable itself is gone (renamed `CNA_GRAPHICS_RENDERER`), and
 `WEBGPU` is one of CNA's public renderer identities
@@ -257,9 +284,9 @@ Obsolete: the variable itself is gone (renamed `CNA_GRAPHICS_RENDERER`), and
 
 ---
 
-## Mistaken
+### Mistaken
 
-### `cna_copy_sdl_runtime()` is unusable by a downstream consumer
+#### `cna_copy_sdl_runtime()` is unusable by a downstream consumer
 
 **Wrong, and the previous audit had already half-corrected itself in place.**
 CMake functions are global once defined, so everything CNA `include()`s is
@@ -281,7 +308,7 @@ now corrected.
 
 ---
 
-## Not runtime-verified in this audit
+### Not runtime-verified in this audit
 
 Listed so the next session does not mistake silence for a passing result:
 

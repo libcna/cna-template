@@ -1,9 +1,9 @@
 name: CI
 
-# Tiered on purpose. CNA has 14 renderers across five platforms, and a naive
+# Tiered on purpose. CNA has 10 renderers across several platforms, and a naive
 # "every renderer x every platform" matrix would be mostly impossible
-# combinations (a GitHub runner cannot build a DirectX renderer on Linux, or
-# Metal anywhere but macOS) and would take hours to tell you nothing.
+# combinations (a GitHub runner cannot build DIRECTX9 on Linux, for example)
+# and would take hours to tell you nothing.
 #
 #   Tier A  structure   every push — cheap, catches manifest/preset/doc drift
 #   Tier B  core        every push — representative renderers, built AND run
@@ -33,13 +33,13 @@ permissions:
 env:
   # One place to change the validated compatibility baseline. Keep in step with
   # dependencies.lock — the structure job checks that they agree. These are the
-  # released tags CNA v0.1.0, sharp-runtime v0.1.0, easy-gl v0.1.1 and meta-gl
-  # v0.4.1; CNA 0.1.0 refuses a sibling at another version, and so does the
+  # validated CNA 0.2 development baseline, sharp-runtime v0.2.0, easy-gl
+  # v0.1.1 and meta-gl v0.4.1; CNA and the
   # template (cmake/CnaTemplateDependencies.cmake), so they move together.
-  CNA_REF: 10a4ef1cb4cd832f761536d77588000104947f8d
-  SHARP_RUNTIME_REF: c20373bae5be1f02d1fe2fa33c4cbba8ad05e4a0
-  EASY_GL_REF: f4d6afaf16cdc7e7e73130950bc45e6d865b41bd
-  META_GL_REF: dd3b30055d55fdc42240de7af248259338256992
+  CNA_REF: 72f437fc62417a62ec2f49aa7558d199f4351af1
+  SHARP_RUNTIME_REF: 1797b51b6e5ed29d2676f2c78f73adccdbbeb2c4
+  EASY_GL_REF: d911020e8cab69f5ad1e94e3a1d81d83406b4020
+  META_GL_REF: 4e9f7b523c935f4159402393bf2412a21b7fd9c6
 
 jobs:
   # --- Tier A -------------------------------------------------------------
@@ -49,6 +49,7 @@ jobs:
     outputs:
       tier_b: ${{ steps.matrix.outputs.tier_b }}
       tier_c: ${{ steps.matrix.outputs.tier_c }}
+      web: ${{ steps.matrix.outputs.web }}
     steps:
       - uses: actions/checkout@v4
         with: { path: cna-template }
@@ -93,6 +94,7 @@ jobs:
         run: |
           echo "tier_b=$(python3 tools/gen_renderer_files.py --ci-matrix linux --tiers B)" >> "$GITHUB_OUTPUT"
           echo "tier_c=$(python3 tools/gen_renderer_files.py --ci-matrix linux --tiers C)" >> "$GITHUB_OUTPUT"
+          echo "web=$(python3 tools/gen_renderer_files.py --ci-matrix web --tiers C)" >> "$GITHUB_OUTPUT"
 
   # --- Tier B -------------------------------------------------------------
   linux-core:
@@ -130,7 +132,7 @@ jobs:
 
       - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
+        run: git submodule update --init --recursive
 
       - uses: hendrikmuhs/ccache-action@v1
         with: { key: 'linux-${{ matrix.renderer }}' }
@@ -143,7 +145,7 @@ jobs:
         working-directory: cna-template
         run: cmake --build build --parallel 3
 
-      # The smoke test carries a CTest label describing what it needs. The four
+      # The smoke test carries a CTest label describing what it needs. The three
       # windowless renderers run with no display at all; the rest get Xvfb.
       - name: Smoke test (no display)
         working-directory: cna-template
@@ -152,6 +154,31 @@ jobs:
       - name: Smoke test (virtual display)
         working-directory: cna-template
         run: xvfb-run -a ctest --test-dir build -L display --output-on-failure --no-tests=ignore
+
+      - name: Enable and install the CNA C++ SDK
+        if: matrix.renderer == 'HEADLESS'
+        working-directory: cna-template
+        run: |
+          cmake -S . -B build -DCNA_INSTALL_CXX=ON
+          cmake --build build --parallel 3
+          cmake --install build --prefix build/package-sdk
+
+      - name: Configure installed-package consumer
+        if: matrix.renderer == 'HEADLESS'
+        working-directory: cna-template
+        run: >-
+          cmake -S . -B build-package -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCNA_TEMPLATE_CNA_MODE=PACKAGE
+          -DCNA_TEMPLATE_PACKAGE_RENDERER=HEADLESS
+          -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/cna-template/build/package-sdk
+
+      - name: Build and test installed-package consumer
+        if: matrix.renderer == 'HEADLESS'
+        working-directory: cna-template
+        run: |
+          cmake --build build-package --parallel 3
+          ctest --test-dir build-package --output-on-failure
 
   # --- Tier C -------------------------------------------------------------
   linux-broad:
@@ -188,7 +215,7 @@ jobs:
 
       - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
+        run: git submodule update --init --recursive
 
       - uses: hendrikmuhs/ccache-action@v1
         with: { key: 'linux-broad-${{ matrix.renderer }}' }
@@ -209,10 +236,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # WEBGL2 is CNA's web default. CANVAS, the WebGL-free DOM path this matrix
-        # also built, was retired by CNA (RRC-018) and is gone from the manifest
-        # (CNA plans/plan_apple_m4.md AM4-291).
-        renderer: [WEBGL2]
+        renderer: ${{ fromJSON(needs.structure.outputs.web) }}
     steps:
       - uses: actions/checkout@v4
         with: { path: cna-template }
@@ -237,32 +261,32 @@ jobs:
 
       - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
+        run: git submodule update --init --recursive
 
       - name: Configure
         working-directory: cna-template
-        run: emcmake cmake -S . -B build-web -DCMAKE_BUILD_TYPE=Release -DCNA_GRAPHICS_RENDERER=${{ matrix.renderer }}
+        run: emcmake cmake -S . -B build-web-${{ matrix.renderer }} -DCMAKE_BUILD_TYPE=Release -DCNA_GRAPHICS_RENDERER=${{ matrix.renderer }}
 
       - name: Build
         working-directory: cna-template
-        run: cmake --build build-web --parallel 3
+        run: cmake --build build-web-${{ matrix.renderer }} --parallel 3
 
       - name: Check the web artifacts exist
         working-directory: cna-template
         run: |
           set -eu
           for f in HelloGame.html HelloGame.js HelloGame.wasm HelloGame.data; do
-            test -f "build-web/$f" || { echo "::error::missing build-web/$f"; exit 1; }
+            test -f "build-web-${{ matrix.renderer }}/$f" || { echo "::error::missing $f"; exit 1; }
           done
-          ls -la build-web/HelloGame.*
+          ls -la build-web-${{ matrix.renderer }}/HelloGame.*
 
       - uses: actions/upload-artifact@v4
         with:
           name: web-${{ matrix.renderer }}
-          path: cna-template/build-web/HelloGame.*
+          path: cna-template/build-web-${{ matrix.renderer }}/HelloGame.*
 
   windows:
-    name: Windows (MSVC, SDL_RENDERER)
+    name: Windows (MSVC, SDLGPU)
     # windows-2022, not windows-latest: windows-latest moved to Visual Studio 2026, where the
     # "Visual Studio 17 2022" generator this job and the README use finds no instance (CNA
     # plans/plan_apple_m4.md AM4-250).
@@ -277,7 +301,7 @@ jobs:
 
       - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
+        run: git submodule update --init --recursive
 
       # CNA's gamer services (GS-003a) need libcurl and nlohmann-json on desktop builds. The image's
       # own vcpkg provides both for MSVC; its toolchain file points find_package() at them.
@@ -290,11 +314,15 @@ jobs:
       - name: Configure
         working-directory: cna-template
         shell: pwsh
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCNA_GRAPHICS_RENDERER=SDL_RENDERER "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows
+        run: cmake --preset windows-msvc-sdlgpu "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows
 
       - name: Build
         working-directory: cna-template
-        run: cmake --build build --config Debug --parallel 3
+        run: cmake --build --preset windows-msvc-sdlgpu --parallel 3
+
+      - name: Smoke test
+        working-directory: cna-template
+        run: ctest --preset windows-msvc-sdlgpu
 
   android:
     name: Android (Gradle)
@@ -310,6 +338,10 @@ jobs:
         with: { repository: libcna/cna, ref: '${{ env.CNA_REF }}', path: cna }
       - uses: actions/checkout@v4
         with: { repository: libcna/sharp-runtime, ref: '${{ env.SHARP_RUNTIME_REF }}', path: sharp-runtime }
+      - uses: actions/checkout@v4
+        with: { repository: libcna/easy-gl, ref: '${{ env.EASY_GL_REF }}', path: easy-gl }
+      - uses: actions/checkout@v4
+        with: { repository: libcna/meta-gl, ref: '${{ env.META_GL_REF }}', path: meta-gl }
 
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
@@ -320,7 +352,7 @@ jobs:
 
       - name: Fetch CNA's vendored submodules
         working-directory: cna
-        run: git submodule update --init third_party/SDL third_party/SDL_image third_party/SDL_mixer third_party/draco
+        run: git submodule update --init --recursive
 
       # CNA's gamer services read the host's header-only nlohmann-json in the NDK cross build too
       # (CNA cmake/HeaderOnlyJson.cmake); libcurl is optional there and absent from the NDK.

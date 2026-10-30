@@ -61,7 +61,13 @@ PLATFORM_TITLES = {
     "macos": "macOS",
     "web": "Web",
     "android": "Android",
+    "ios": "iOS",
+    "bsd": "BSD",
+    "other": "other targets",
 }
+
+DEFAULT_PLATFORM_ORDER = ("web", "windows", "macos", "ios", "linux", "android", "bsd", "other")
+PRESET_ROUTES = {"native", "web", "windows-msvc", "windows-mingw"}
 
 TIER_TEXT = {
     "B": "every PR",
@@ -71,9 +77,8 @@ TIER_TEXT = {
 }
 
 
-def load_manifest() -> list[dict]:
-    data = json.loads(MANIFEST.read_text())
-    return data["renderers"]
+def load_manifest() -> dict:
+    return json.loads(MANIFEST.read_text())
 
 
 def canonical_from_cna() -> list[str] | None:
@@ -96,11 +101,11 @@ def slug(name: str) -> str:
     return name.lower().replace("_", "-")
 
 
-def check_against_cna(renderers: list[dict]) -> list[str]:
-    """Return human-readable drift problems (empty when in sync)."""
+def check_against_cna(renderers: list[dict]) -> tuple[list[str], bool]:
+    """Return human-readable status messages and whether CNA drift was found."""
     canonical = canonical_from_cna()
     if canonical is None:
-        return ["note: no CNA checkout found, renderer names not cross-checked"]
+        return ["note: no CNA checkout found, renderer names not cross-checked"], False
 
     ours = [r["name"] for r in renderers]
     missing = [n for n in canonical if n not in ours]
@@ -118,6 +123,51 @@ def check_against_cna(renderers: list[dict]) -> list[str]:
         )
     if not problems:
         problems.append(f"ok: manifest matches CNA's {len(canonical)} canonical renderers")
+    return problems, bool(missing or extra)
+
+
+def validate_manifest(manifest: dict) -> list[str]:
+    """Return structural problems which would make generated output misleading."""
+    problems: list[str] = []
+    renderers = manifest.get("renderers")
+    defaults = manifest.get("defaults")
+    if not isinstance(renderers, list) or not renderers:
+        return ["manifest field 'renderers' must be a non-empty array"]
+    if not isinstance(defaults, dict) or not defaults:
+        problems.append("manifest field 'defaults' must be a non-empty object")
+        defaults = {}
+
+    names = [renderer.get("name") for renderer in renderers]
+    duplicates = sorted({name for name in names if names.count(name) > 1})
+    if duplicates:
+        problems.append("duplicate renderer name(s): " + ", ".join(duplicates))
+
+    by_name = {renderer.get("name"): renderer for renderer in renderers}
+    for platform, renderer_name in defaults.items():
+        renderer = by_name.get(renderer_name)
+        if renderer is None:
+            problems.append(f"default for {platform} names unknown renderer {renderer_name}")
+            continue
+        allowed = set(renderer.get("platforms", [])) | set(renderer.get("experimental", []))
+        if platform not in allowed:
+            problems.append(
+                f"default {platform}={renderer_name} is absent from that renderer's "
+                "platforms/experimental metadata"
+            )
+
+    for renderer in renderers:
+        for route in renderer.get("presets", []):
+            if route not in PRESET_ROUTES:
+                problems.append(f"{renderer.get('name')} has unknown preset route {route}")
+        if "web" in renderer.get("presets", []):
+            allowed = set(renderer.get("platforms", [])) | set(renderer.get("experimental", []))
+            if "web" not in allowed:
+                problems.append(f"{renderer.get('name')} has a web preset but no web platform")
+        if any(route.startswith("windows-") for route in renderer.get("presets", [])):
+            if "windows" not in renderer.get("platforms", []):
+                problems.append(
+                    f"{renderer.get('name')} has a Windows preset but no Windows platform"
+                )
     return problems
 
 
@@ -154,61 +204,92 @@ def build_presets(renderers: list[dict]) -> dict:
                 "rhs": "Linux",
             },
         },
+        {
+            "name": "msvc-base",
+            "hidden": True,
+            "inherits": "base",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows",
+            },
+        },
     ]
     build = []
     test = []
 
     for renderer in renderers:
-        if not renderer.get("preset"):
-            continue
-
         name = renderer["name"]
         platforms = renderer["platforms"]
-        preset_name = slug(name)
-        inherits = "base"
-        condition = None
+        for route in renderer.get("presets", []):
+            preset_name = slug(name)
+            inherits = "base"
+            condition = None
+            binary_suffix = preset_name
+            if route == "web":
+                preset_name = f"web-{slug(name)}"
+                binary_suffix = preset_name
+                inherits = "web-base"
+            elif route == "windows-mingw":
+                preset_name = f"windows-mingw-{slug(name)}"
+                binary_suffix = preset_name
+                inherits = "mingw-base"
+            elif route == "windows-msvc":
+                preset_name = f"windows-msvc-{slug(name)}"
+                binary_suffix = preset_name
+                inherits = "msvc-base"
+            else:
+                host_names = [
+                    host
+                    for platform, host in (
+                        ("linux", "Linux"), ("windows", "Windows"), ("macos", "Darwin")
+                    )
+                    if platform in platforms
+                ]
+                if len(host_names) == 1:
+                    condition = {
+                        "type": "equals",
+                        "lhs": "${hostSystemName}",
+                        "rhs": host_names[0],
+                    }
+                elif host_names:
+                    condition = {
+                        "type": "anyOf",
+                        "conditions": [
+                            {
+                                "type": "equals",
+                                "lhs": "${hostSystemName}",
+                                "rhs": host,
+                            }
+                            for host in host_names
+                        ],
+                    }
 
-        # A renderer that can only ever target one platform gets a preset shaped
-        # for that platform, so the preset is usable rather than merely present.
-        if platforms == ["web"]:
-            preset_name = f"web-{slug(name)}"
-            inherits = "web-base"
-        elif platforms == ["windows"]:
-            preset_name = f"windows-{slug(name)}"
-            inherits = "mingw-base"
-        elif platforms == ["macos"]:
-            condition = {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Darwin",
+            entry = {
+                "name": preset_name,
+                "displayName": f"{name} ({route})",
+                "description": (
+                    f"{renderer['dimension'].upper()} renderer. "
+                    f"Platforms: {', '.join(platforms)}. "
+                    f"Dependency: {renderer['dependency']}."
+                ),
+                "inherits": inherits,
+                "binaryDir": f"${{sourceDir}}/build/{binary_suffix}",
+                "cacheVariables": {"CNA_GRAPHICS_RENDERER": name},
             }
+            if condition:
+                entry["condition"] = condition
 
-        entry = {
-            "name": preset_name,
-            # First sentence of the note, split on ". " so "GLES 2.0" survives.
-            "displayName": f"{name} — {renderer['notes'].split('. ')[0].rstrip('.')}",
-            "description": (
-                f"{renderer['dimension'].upper()} renderer. "
-                f"Platforms: {', '.join(platforms)}. "
-                f"Dependency: {renderer['dependency']}."
-            ),
-            "inherits": inherits,
-            "binaryDir": "${sourceDir}/" + (
-                "build-probe" if platforms == ["web"] else
-                "build-consumer" if platforms == ["windows"] else "build"
-            ),
-            "cacheVariables": {"CNA_GRAPHICS_RENDERER": name},
-        }
-        if condition:
-            entry["condition"] = condition
+            configure.append(entry)
+            build_entry = {"name": preset_name, "configurePreset": preset_name}
+            if route == "windows-msvc":
+                build_entry["configuration"] = "Debug"
+            build.append(build_entry)
 
-        configure.append(entry)
-        build.append({"name": preset_name, "configurePreset": preset_name})
-
-        # Only renderers that actually run on the host get a test preset.
-        if platforms != ["web"]:
-            test.append(
-                {
+            if route in {"native", "windows-msvc"}:
+                test_entry = {
                     "name": preset_name,
                     "configurePreset": preset_name,
                     "output": {"outputOnFailure": True},
@@ -220,7 +301,9 @@ def build_presets(renderers: list[dict]) -> dict:
                         }
                     },
                 }
-            )
+                if route == "windows-msvc":
+                    test_entry["configuration"] = "Debug"
+                test.append(test_entry)
 
     return {
         "version": 3,
@@ -234,7 +317,27 @@ def build_presets(renderers: list[dict]) -> dict:
 # --------------------------------------------------------------------------
 # docs/renderers.md
 # --------------------------------------------------------------------------
-def build_doc(renderers: list[dict]) -> str:
+def preset_names(renderer: dict) -> list[str]:
+    names = []
+    for route in renderer.get("presets", []):
+        if route == "native":
+            names.append(slug(renderer["name"]))
+        else:
+            names.append(f"{route}-{slug(renderer['name'])}")
+    return names
+
+
+def defaults_sentence(defaults: dict) -> str:
+    grouped: dict[str, list[str]] = {}
+    for platform in DEFAULT_PLATFORM_ORDER:
+        renderer = defaults.get(platform)
+        if renderer:
+            grouped.setdefault(renderer, []).append(PLATFORM_TITLES[platform])
+    parts = [f"`{renderer}` on {', '.join(platforms)}" for renderer, platforms in grouped.items()]
+    return "If you set nothing, CNA chooses " + "; ".join(parts) + "."
+
+
+def build_doc(renderers: list[dict], defaults: dict) -> str:
     canonical = canonical_from_cna()
     count = len(renderers)
 
@@ -255,10 +358,7 @@ def build_doc(renderers: list[dict]) -> str:
     add("cmake -S . -B build -DCNA_GRAPHICS_RENDERER=OPENGLES3")
     add("```")
     add("")
-    add(
-        "If you set nothing, CNA chooses for you: `WEBGL2` on the web, `OPENGLES3` on "
-        "Linux, `SDL_RENDERER` everywhere else."
-    )
+    add(defaults_sentence(defaults))
     add("")
     add("## How to read this")
     add("")
@@ -301,8 +401,8 @@ def build_doc(renderers: list[dict]) -> str:
             continue
         add(f"## {title}")
         add("")
-        add("| Renderer | Platforms | Scope | Display | Dependency | Tested | Notes |")
-        add("| --- | --- | --- | --- | --- | --- | --- |")
+        add("| Renderer | Platforms | Scope | Display | Dependency | Presets | Tested | Notes |")
+        add("| --- | --- | --- | --- | --- | --- | --- | --- |")
         for renderer in group:
             platforms = ", ".join(PLATFORM_TITLES[p] for p in renderer["platforms"])
             experimental = renderer.get("experimental") or []
@@ -313,12 +413,11 @@ def build_doc(renderers: list[dict]) -> str:
             scope = "2D+3D" if renderer["dimension"] == "2d3d" else "2D"
             display = "window" if renderer["display"] == "window" else "**none**"
             tested = TIER_TEXT.get(renderer["tier"], renderer["tier"])
-            preset = f"`{slug(renderer['name'])}`" if renderer.get("preset") else "—"
+            presets = ", ".join(f"`{name}`" for name in preset_names(renderer)) or "—"
             add(
                 f"| `{renderer['name']}` | {platforms} | {scope} | {display} | "
-                f"{renderer['dependency']} | {tested} | {renderer['notes']} |"
+                f"{renderer['dependency']} | {presets} | {tested} | {renderer['notes']} |"
             )
-            del preset
         add("")
 
     add("## Presets")
@@ -367,7 +466,15 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    renderers = load_manifest()
+    manifest = load_manifest()
+    problems = validate_manifest(manifest)
+    if problems:
+        for problem in problems:
+            print(f"error: {problem}", file=sys.stderr)
+        return 1
+
+    renderers = manifest["renderers"]
+    defaults = manifest["defaults"]
 
     # Lets the CI workflow build its matrix from the manifest instead of
     # repeating a renderer list in YAML, where it would drift unnoticed.
@@ -381,12 +488,15 @@ def main() -> int:
         print(json.dumps(selected))
         return 0
 
-    for line in check_against_cna(renderers):
+    messages, has_drift = check_against_cna(renderers)
+    for line in messages:
         print(line)
+    if has_drift:
+        return 1
 
     wanted = {
         PRESETS: json.dumps(build_presets(renderers), indent=2) + "\n",
-        RENDERER_DOC: build_doc(renderers),
+        RENDERER_DOC: build_doc(renderers, defaults),
     }
 
     if args.check:

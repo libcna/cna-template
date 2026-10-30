@@ -1,25 +1,3 @@
-AI must not be used to generate code for contributions to this project.
-
-"AI" in this case means a Large Language Model ("LLM"), such as ChatGPT,
-Claude, Copilot, Grok, etc.
-
-AI-generated code is based upon sources of unknown origins and may not be 
-compatible with the licenses applicable to this project, or may introduce 
-conflicting license terms if it includes code from other projects.
-
-AI can be used to identify issues with contributions to this project, but the
-solutions to those issues should be authored by humans.
-
-We have found that AI will frequently hallucinate issues that are not actually
-problems in practice, report incorrect information, and describe problems that
-are actually not issues at all. If AI identifies a problem with this codebase,
-please make sure you understand what it is saying and have independently
-confirmed that the issue exists before submitting a bug report or pull request.
-
-By submitting a pull request to this project, you confirm that you are the
-author of your changes, have the necessary rights to contribute them, and
-comply with all applicable licensing requirements of this project.
-
 # cna-template — Claude Code Guidelines
 
 ## Project Overview
@@ -96,8 +74,8 @@ renderer CNA accepts is selectable; presets exist only for the common ones.
 Smoke tests carry a CTest label describing what they need from the environment:
 
 ```bash
-ctest --test-dir <build> -L headless      # no display needed at all
-xvfb-run -a ctest --test-dir <build> -L display
+ctest --test-dir <build> -L headless
+../cna/tools/platform/run_gpu_tests_private.sh <build> -L display
 ```
 
 **Build discipline:** cap compilation at `-j3`, always reuse an existing build
@@ -115,8 +93,7 @@ directory, and never build under `/tmp` or the session scratchpad. See
   already presents exactly once per frame, exactly as real XNA/FNA does. Calling
   it yourself presents twice; SDL treats the backbuffer as invalid after a
   present, so the second one shows undefined content and the window flickers
-  every frame. CNA's own `README.md` §10 still shows this wrongly — see
-  `missing.md`.
+  every frame.
 - **Prefer capabilities over renderer names.** Ask
   `GraphicsDevice::SupportsCapability(CNA::GraphicsCapability::X)` at runtime
   rather than testing which renderer is compiled in.
@@ -129,9 +106,8 @@ directory, and never build under `/tmp` or the session scratchpad. See
 - Remember that some renderers open **no window at all** (`display: "none"` in
   `cmake/renderers.json`). Code that assumes a window must probe
   `getWindowProperty().GetNativeWindowHandleEXT().system`, not assume.
-- Keep sources under `game/`. A top-level `src/` or `include/` currently breaks
-  the build — an upstream CNA bug documented in `missing.md`, with a preflight
-  check in `CMakeLists.txt` that explains it.
+- The starter keeps sources under `game/` so they are easy to delete. Current
+  CNA also supports conventional top-level `src/` and `include/` directories.
 - Do not add features or abstractions beyond what is asked. This is a template;
   `HelloGame` must stay easy to delete.
 - Comments explain *why*, never *what*.
