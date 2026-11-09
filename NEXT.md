@@ -1,6 +1,21 @@
 # NEXT.md — handoff
 
-## Current handoff — 2026-10-30: CNA 0.2 renderer migration
+## Current handoff — 2026-11-09: pins moved to CNA next (C ABI 0.60.0)
+
+- `dependencies.lock` and CI pin CNA `30142a14d` (next), sharp-runtime `0abe8a91` (next),
+  easy-gl `b582bd85` and meta-gl `795bcdcf`. The game code compiled unchanged; the version
+  gate, manifest and generated files already matched CNA's ten identities and defaults.
+- README corrections: built-in XNB readers are installed by `Load<T>()`, `cna-content`
+  exists, compiled `.fx` bytecode is supported where `CompiledEffects` is reported.
+- Verified locally: generator `--check`, pin agreement and preset parsing pass; SOURCE-mode
+  HEADLESS builds (973 steps) and passes `-L headless` 1/1; the installed HEADLESS SDK in
+  PACKAGE mode passes 1/1; OPENGLES3 builds (1002 steps) and passes `-L display` 1/1 on CNA's
+  private GPU runner (Mesa GLES 3.2), reporting OPENGLES3 correctly.
+- Not verified: web, Windows MSVC, MinGW DIRECTX9, Android, and the tier-C renderers
+  (SDLGPU, OPENGL33, WEBGPU, FNA3D).
+- `missing.md` CNA-2, CNA-9 and CNA-10 were re-checked at CNA `30142a14d` and remain open.
+
+## Handoff — 2026-10-30: CNA 0.2 renderer migration
 
 - The manifest follows CNA's ten identities and the new `SDLGPU` spelling.
 - Presets are route-aware and use separate build directories.
