@@ -1,6 +1,18 @@
 # NEXT.md — handoff
 
-## Current handoff — 2026-11-09: pins moved to CNA next (C ABI 0.60.0)
+## Current handoff — 2026-11-09 (later): Windows CI repaired upstream; CNA pin 679ab9d64
+
+- The Windows (MSVC, SDLGPU) job had failed since 2026-10-30: every extension-less loose asset
+  load failed on MSVC (`Error loading "logo". File not found.`). Root cause in CNA d7ce398d8,
+  fixed by CNA 679ab9d64 (CONTENT-MSVC-01). The pin now includes it and the CNA-2/CNA-9/CNA-10
+  fixes (`missing.md`).
+- The 30 s timeout that followed: an exception leaving `main()` calls `std::terminate()`, and
+  MSVC's Debug `abort()` opens a modal dialog. `game/src/Program.cpp` now catches it and returns 1.
+- Verified locally: pin agreement and generator `--check`; HEADLESS builds and passes
+  `-L headless` 1/1; with `Content/logo.png` hidden, `HelloGame --smoke-test` exits 1 with the
+  error message instead of aborting. Windows itself is verified by CI only.
+
+## Earlier handoff — 2026-11-09: pins moved to CNA next (C ABI 0.60.0)
 
 - `dependencies.lock` and CI pin CNA `30142a14d` (next), sharp-runtime `0abe8a91` (next),
   easy-gl `b582bd85` and meta-gl `795bcdcf`. The game code compiled unchanged; the version

@@ -11,16 +11,18 @@ Sharp Runtime ordering/compatibility, README `Present()` and Emscripten
 removed those workarounds and now delegates runtime packaging to
 `cna_deploy_runtime()`.
 
-Three integration gaps remain:
+The three integration gaps found last were fixed upstream on 2026-11-09 (CNA `2030a1e33` and
+`bc5e3c9a2`, both in the pinned `679ab9d64`). The template keeps its workarounds for now; they are
+harmless and can be removed once no supported pin predates the fixes:
 
-- **CNA-2:** `CNA_GL_PROFILE_*` is still directory-scoped rather than exported
-  on `CNA::BuildConfig`. The template reapplies the selected GL profile to its
-  executable in SOURCE and PACKAGE modes.
-- **CNA-9:** vendored SDL's persistent cache defaults inside the CNA checkout.
-  SOURCE mode redirects `CNA_SDL_PREBUILT_ROOT` into the template's ignored
-  `build/` directory unless the caller supplies another writable location.
-- **CNA-10:** an installed C++ SDK does not publish the renderer identity it was
-  compiled for. PACKAGE mode therefore requires the descriptive
+- **CNA-2 (fixed upstream):** `CNA_GL_PROFILE_*` now rides `CNA::BuildConfig`, so a consumer's
+  translation units report the same GL renderer as CNA's. The template still reapplies the
+  selected GL profile to its executable in SOURCE and PACKAGE modes.
+- **CNA-9 (fixed upstream):** CNA defaults the SDL cache into the consumer's binary tree when its
+  own checkout is not writable. SOURCE mode still redirects `CNA_SDL_PREBUILT_ROOT` into the
+  template's ignored `build/` directory unless the caller supplies another location.
+- **CNA-10 (fixed upstream):** an installed C++ SDK publishes `CNA_SDK_GRAPHICS_RENDERER` and
+  `CNA_SDK_GRAPHICS_RENDERERS`. PACKAGE mode still takes the descriptive
   `CNA_TEMPLATE_PACKAGE_RENDERER` value; it does not select or rebuild the SDK.
 
 The former `CNA_GRAPHICS_BACKEND` vocabulary, removed renderer identities and
