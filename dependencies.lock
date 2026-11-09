@@ -1,7 +1,6 @@
-# Compatibility baseline for cna-template.
-#
-# Compatibility baseline for the CNA 0.2 development line after the public
-# SDL_GPU -> SDLGPU renderer-identity migration.
+# Compatibility baseline for cna-template on the CNA 0.2 development line:
+# CNA and sharp-runtime at their `next` branches of 2026-11-09, easy-gl and
+# meta-gl at their `develop` branches of 2026-10-31.
 # CI pins these (.github/workflows/ci.yml); its "structure" job fails if the two ever
 # disagree.
 #
@@ -18,7 +17,7 @@
 # When updating: change these, change the env: block in ci.yml, and re-run the
 # host verification matrix recorded in NEXT.md.
 
-CNA=72f437fc62417a62ec2f49aa7558d199f4351af1
-SHARP_RUNTIME=1797b51b6e5ed29d2676f2c78f73adccdbbeb2c4
-EASY_GL=d911020e8cab69f5ad1e94e3a1d81d83406b4020
-META_GL=4e9f7b523c935f4159402393bf2412a21b7fd9c6
+CNA=30142a14d789de765801ff0c87e91e090f4e94be
+SHARP_RUNTIME=0abe8a91205093e2288a6473562446d8b2d48adf
+EASY_GL=b582bd85f646678d1de38473160defed4729f323
+META_GL=795bcdcfe9e2c418ced189717d3699cbb0847cc0

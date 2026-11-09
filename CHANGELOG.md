@@ -19,6 +19,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). While the
   manual SDL/renderer/MinGW copying with `cna_deploy_runtime()`.
 - Updated Android's default contract to OPENGLES3/GLES 3 and refreshed CI and
   documentation for the curated renderer set.
+- Moved `dependencies.lock` and CI to CNA `30142a14d` and sharp-runtime
+  `0abe8a91` (both `next`, 2026-11-09), easy-gl `b582bd85` and meta-gl
+  `795bcdcf` (both `develop`).
+- README: the content section describes current CNA (built-in XNB readers are
+  installed on demand, the `cna-content` pipeline writes `.cnb` and `.xnb`,
+  compiled effect bytecode loads on renderers reporting `CompiledEffects`), and
+  the Android note states CNA's current qualification status.
 
 ## [0.1.0] — 2026-10-10
 

@@ -17,13 +17,13 @@
  * It is intentionally small: load one texture and animate it. Delete it and
  * replace it with your own game -- see README.md.
  *
- * It is also deliberately renderer-agnostic. CNA has 14 renderers, and they are
- * not interchangeable: some are 2D-only, some open no window at all, some draw
- * nothing on purpose. Everything HelloGame does (Clear, SpriteBatch, Texture2D)
- * is in the subset every renderer implements, and anything beyond that subset is
- * gated on GraphicsDevice::SupportsCapability() rather than on the renderer's
- * name. Follow that pattern as you grow the game and it will keep working
- * wherever you point it.
+ * It is also deliberately renderer-agnostic. CNA has 10 renderers, and they are
+ * not interchangeable: their optional capabilities differ, some open no window
+ * at all, one draws nothing on purpose. Everything HelloGame does (Clear,
+ * SpriteBatch, Texture2D) is in the subset every renderer implements, and
+ * anything beyond that subset is gated on GraphicsDevice::SupportsCapability()
+ * rather than on the renderer's name. Follow that pattern as you grow the game
+ * and it will keep working wherever you point it.
  */
 class HelloGame : public Microsoft::Xna::Framework::Game {
 public:

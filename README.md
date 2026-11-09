@@ -49,8 +49,8 @@ specific XNA features, see
 ## Version
 
 Current release: **0.1.0** (pre-1.0; see [`CHANGELOG.md`](CHANGELOG.md) for what the release
-contains and [`docs/releasing.md`](docs/releasing.md) for how versions are managed). It is built
-and the development branch requires **CNA 0.2.0** and **sharp-runtime 0.2.0**, plus **easy-gl 0.1.1** and
+contains and [`docs/releasing.md`](docs/releasing.md) for how versions are managed). The
+development branch requires **CNA 0.2.0** and **sharp-runtime 0.2.0**, plus **easy-gl 0.1.1** and
 **meta-gl 0.4.1** when a GL-family renderer is selected; configuration checks those versions and
 stops with the `git checkout` to run if a sibling declares another one
 (`cmake/CnaTemplateDependencies.cmake`; the exact commits are in `dependencies.lock`). Compiled
@@ -242,7 +242,7 @@ template cannot silently fall behind CNA the way it did before.
 1. **Rename the executable** — set `CNA_TEMPLATE_APP_NAME` in `CMakeLists.txt`,
    or pass `-DCNA_TEMPLATE_APP_NAME=MyGame`.
 2. **Rename the class** — rename `game/src/HelloGame.cpp` and
-   `game/include/HelloGame/HelloGame.hpp`, update the `HELLOGAME_SOURCES` entries
+   `game/include/HelloGame/HelloGame.hpp`, update the `CNA_TEMPLATE_SOURCES` entries
    in `CMakeLists.txt`, and keep the two bookkeeping macros in step:
    `GetTypeNameHPP()` in the header and `GetTypeNameCPP(MyGame, "MyGame")` at
    file scope in the `.cpp`. Both are required to compile.
@@ -264,11 +264,18 @@ cmake --preset opengles3
 cmake --build --preset opengles3 -j3
 ```
 
-Or without a preset:
+Or, for CNA's modern native renderer:
 
 ```bash
 cmake --preset sdlgpu
 cmake --build --preset sdlgpu -j3
+```
+
+Or without a preset:
+
+```bash
+cmake -S . -B build -DCNA_GRAPHICS_RENDERER=OPENGLES3
+cmake --build build -j3
 ```
 
 ### Windows
@@ -342,8 +349,9 @@ The APK lands in `android/app/build/outputs/apk/debug/`. Assets from `Content/`
 are packaged automatically. The native library must stay named `main` and the
 entry point must be `SDL_main`, because that is what SDL's Java glue looks for.
 
-CNA's own documentation currently disagrees with itself about the state of the
-Android cross-build — see [Known upstream issues](#known-upstream-issues).
+CNA records NDK cross-builds and emulator runs at earlier revisions, but has not
+qualified Android at its current tree (`cna/docs/android-graphics-limitations.md`),
+and this template's Android build was not run against the pinned revisions.
 The default renderer is `OPENGLES3`, and the manifest therefore requires GLES 3.
 
 ### macOS
@@ -390,22 +398,23 @@ auto texture = getContentProperty().Load<Texture2D>("logo");   // Content/logo.p
 | SpriteFont | `.xnb` fonts from XNA/MonoGame, or a `.cnj` descriptor plus a glyph atlas |
 | Audio | WAV, OGG Vorbis, MP3, FLAC, AIFF, MIDI; XACT `.xgs`/`.xwb`/`.xsb` too |
 | Video | via FFmpeg on Linux/macOS; compiled out on Windows, Android and Web |
-| Effects | the stock effects, or GLSL through a `.cnj` Effect envelope |
+| Effects | the stock effects; compiled XNA effect bytecode (`.fxb`, or an Effect `.xnb`); or a renderer-dialect `ShaderEffect` through a `.cnj` Effect envelope |
 
-**`.xnb` works now.** Earlier versions of this README stated that CNA would
-never read `.xnb` and that you had to extract your assets first. That is wrong:
-CNA ships a full `.xnb` read path including LZX decompression, and
-`ContentManager` probes `<asset>.xnb` before any loose file. Register the
-built-in readers once at startup:
+**`.xnb` works.** CNA ships a full `.xnb` read path including LZX
+decompression, and `ContentManager` probes `<asset>.xnb` before `.cnb`, `.cnj`
+and loose files. A `Game` declares CNA's built-in readers, and `Load<T>()`
+installs the ones it needs, so no registration call is required for ordinary
+loads (`cna/docs/xnb-content-pipeline-support.md`).
 
-```cpp
-CNA::Internal::Xnb::RegisterAllBuiltInXnbReaders();
-```
-
-What is genuinely *not* supported is **writing** `.xnb` (there is no content
-pipeline — use the loose formats above), and **compiled `.fx` bytecode**, whose
-`Effect` constructor still throws. Custom shaders are written as GLSL and need a
-renderer that reports the `CustomEffects` capability.
+CNA also has a build-time content pipeline, `cna-content`, which compiles
+authoring files to CNA's `.cnb` or to `.xnb` (`cna/docs/content-pipeline.md`).
+It does not compile HLSL `.fx` source; compile that with the XNA/FNA toolchain
+first. Loading compiled effect bytecode needs a renderer that reports the
+`CompiledEffects` capability, which on most renderers is a CNA build option
+(`cna/docs/fx-compiled-effects.md`). A `ShaderEffect` is a separate, non-XNA
+contract: ask the device which shader languages it accepts rather than relying
+on the broad `CustomEffects` capability
+(`cna/docs/shader-effect-vs-fx-bytecode.md`).
 
 ---
 

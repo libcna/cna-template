@@ -33,13 +33,13 @@ permissions:
 env:
   # One place to change the validated compatibility baseline. Keep in step with
   # dependencies.lock — the structure job checks that they agree. These are the
-  # validated CNA 0.2 development baseline, sharp-runtime v0.2.0, easy-gl
-  # v0.1.1 and meta-gl v0.4.1; CNA and the
-  # template (cmake/CnaTemplateDependencies.cmake), so they move together.
-  CNA_REF: 72f437fc62417a62ec2f49aa7558d199f4351af1
-  SHARP_RUNTIME_REF: 1797b51b6e5ed29d2676f2c78f73adccdbbeb2c4
-  EASY_GL_REF: d911020e8cab69f5ad1e94e3a1d81d83406b4020
-  META_GL_REF: 4e9f7b523c935f4159402393bf2412a21b7fd9c6
+  # validated development baseline: CNA and sharp-runtime `next` (both declare
+  # 0.2.0), easy-gl and meta-gl `develop` (0.1.1 and 0.4.1). Those versions are
+  # what cmake/CnaTemplateDependencies.cmake requires, so they move together.
+  CNA_REF: 30142a14d789de765801ff0c87e91e090f4e94be
+  SHARP_RUNTIME_REF: 0abe8a91205093e2288a6473562446d8b2d48adf
+  EASY_GL_REF: b582bd85f646678d1de38473160defed4729f323
+  META_GL_REF: 795bcdcfe9e2c418ced189717d3699cbb0847cc0
 
 jobs:
   # --- Tier A -------------------------------------------------------------
@@ -327,9 +327,10 @@ jobs:
   android:
     name: Android (Gradle)
     runs-on: ubuntu-latest
-    # Not gating pull requests on it: CNA's own documentation currently
-    # disagrees with itself about whether the NDK cross-build works, so a
-    # failure here is more likely to be upstream than to be this template.
+    # Not gating pull requests on it: CNA has not qualified Android at its
+    # current tree (cna/docs/android-graphics-limitations.md) and no CNA
+    # workflow builds it, so a failure here is more likely to be upstream than
+    # to be this template.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
