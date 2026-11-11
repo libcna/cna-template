@@ -36,8 +36,8 @@ env:
   # validated development baseline: CNA and sharp-runtime `next` (both declare
   # 0.2.0), easy-gl and meta-gl `develop` (0.1.1 and 0.4.1). Those versions are
   # what cmake/CnaTemplateDependencies.cmake requires, so they move together.
-  CNA_REF: 679ab9d6451f06182be2133465d17e027c8545e8
-  SHARP_RUNTIME_REF: 0abe8a91205093e2288a6473562446d8b2d48adf
+  CNA_REF: 4ef67873b252bb07bcb270011ae7bc5a55aac105
+  SHARP_RUNTIME_REF: f8ea4b1f781fffab887d55966949395ae6e1b5ab
   EASY_GL_REF: b582bd85f646678d1de38473160defed4729f323
   META_GL_REF: 795bcdcfe9e2c418ced189717d3699cbb0847cc0
 

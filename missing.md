@@ -12,7 +12,7 @@ removed those workarounds and now delegates runtime packaging to
 `cna_deploy_runtime()`.
 
 The three integration gaps found last were fixed upstream on 2026-11-09 (CNA `2030a1e33` and
-`bc5e3c9a2`, both in the pinned `679ab9d64`). The template keeps its workarounds for now; they are
+`bc5e3c9a2`, both in the pinned `4ef67873b`). The template keeps its workarounds for now; they are
 harmless and can be removed once no supported pin predates the fixes:
 
 - **CNA-2 (fixed upstream):** `CNA_GL_PROFILE_*` now rides `CNA::BuildConfig`, so a consumer's

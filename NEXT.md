@@ -1,6 +1,22 @@
 # NEXT.md — handoff
 
-## Current handoff — 2026-11-09 (later): Windows CI repaired upstream; CNA pin 679ab9d64
+## Current handoff — 2026-11-11: pins moved to CNA 4ef67873b and sharp-runtime f8ea4b1f
+
+- `dependencies.lock` and CI pin CNA `4ef67873b` and sharp-runtime `f8ea4b1f` (both `next`,
+  2026-11-11); easy-gl `b582bd85` and meta-gl `795bcdcf` are unchanged. The game code compiled
+  and ran unchanged: `HelloGame` sets every BasicEffect property before `EffectPass::Apply`, so
+  the stock effects now latching their parameters at `Apply`, as XNA does, changes nothing here.
+- Verified locally: pin agreement, generator `--check` and preset parsing pass; SOURCE-mode
+  HEADLESS (with `CNA_INSTALL_CXX=ON`) builds and passes `-L headless` 1/1; the installed
+  HEADLESS SDK in PACKAGE mode builds and passes 1/1; an `opengles3` tree with
+  `CNA_GRAPHICS_RENDERERS=OPENGLES3;SOFTWARE;STUB` builds and passes `-L headless` 2/2 and
+  `-L display` 2/2 on CNA's private GPU runner (Mesa GLES 3.2), each run reporting the selected
+  renderer. The local meta-gl checkout was one commit ahead of the pin (`146e171`, enum
+  additions only).
+- Not verified locally: web, Windows MSVC, MinGW DIRECTX9, Android and the tier-C renderers
+  (SDLGPU, OPENGL33, WEBGPU, FNA3D); CI covers web, Windows and Android.
+
+## Earlier handoff — 2026-11-09 (later): Windows CI repaired upstream; CNA pin 679ab9d64
 
 - The Windows (MSVC, SDLGPU) job had failed since 2026-10-30: every extension-less loose asset
   load failed on MSVC (`Error loading "logo". File not found.`). Root cause in CNA d7ce398d8,
