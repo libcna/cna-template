@@ -1,5 +1,5 @@
 # Compatibility baseline for cna-template on the CNA 0.2 development line:
-# CNA and sharp-runtime at their `next` branches of 2026-11-11, easy-gl and
+# CNA and sharp-runtime at their `next` branches of 2026-11-12, easy-gl and
 # meta-gl at their `develop` branches of 2026-10-31.
 # CI pins these (.github/workflows/ci.yml); its "structure" job fails if the two ever
 # disagree.
@@ -17,7 +17,7 @@
 # When updating: change these, change the env: block in ci.yml, and re-run the
 # host verification matrix recorded in NEXT.md.
 
-CNA=4ef67873b252bb07bcb270011ae7bc5a55aac105
-SHARP_RUNTIME=f8ea4b1f781fffab887d55966949395ae6e1b5ab
+CNA=4ccbe5b8048ee9ce3aba06bcc2663427156405da
+SHARP_RUNTIME=de06c17c1f02e480c69473b42796a7194edd17fb
 EASY_GL=b582bd85f646678d1de38473160defed4729f323
 META_GL=795bcdcfe9e2c418ced189717d3699cbb0847cc0
